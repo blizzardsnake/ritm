@@ -42,6 +42,7 @@ import { swapActiveExercise } from './lib/active-exercise-swap.js'
 import { useSheetKeyboard, useRevealActiveChip, tappable } from './lib/use-sheet-keyboard.js'
 import { isFav, toggleFav, sortFavouritesFirst } from './lib/favourites.js'
 import { buildSessionEntries, buildPlannedEntry, builtOutOfProgression } from './lib/session-start.js'
+import { eventTime } from './lib/personal/time.js'
 import { joinSessionNoProg } from './lib/session-noprog.js'
 import { buildCombinedEntries, deriveSessionName } from './lib/session-merge.js'
 import { workoutsOn, backfillStart, backfillEnd, completeBackfill, historyAsOf, sessionHistory } from './lib/backfill.js'
@@ -2175,9 +2176,11 @@ export function startFlow(routineIds) {
 export function beginWorkout(routineIds, bw) {
   const st = S()
   const { entries, routineIds: rids, routines } = buildCombinedEntries(st, routineIds)
+  const started = eventTime(Date.now())
   update(s => {
     s.active = {
-      id: uid(), d: todayISO(), start: Date.now(),
+      id: uid(), d: started.date, start: started.at, timezone: started.timezone,
+      offsetMinutes: started.offsetMinutes, recordedAt: started.at,
       // A session tracks its routines as a list; per-entry `rid` carries which one each
       // exercise came from. No top-level `excludeFromProgression` — per-entry `noProg` does it.
       routineIds: rids,
@@ -2277,11 +2280,13 @@ export function logPastWorkoutSheet(initial) {
 function beginBackfill({ iso, time, durationMin, routineIds, replaceId }) {
   const st = S()
   const start = backfillStart(iso, time)
+  const clock = eventTime(start)
   const past = historyAsOf(st, { d: iso, start, replaceId })
   const { entries, routineIds: rids, routines } = buildCombinedEntries(past, routineIds || [])
   update(s => {
     s.active = {
       id: uid(), d: iso, start,
+      timezone: clock.timezone, offsetMinutes: clock.offsetMinutes, recordedAt: Date.now(),
       routineIds: rids,
       name: routines.length ? deriveSessionName(routines.map(r => r.name)) : t('Freestyle'),
       bw: null, cur: 0, entries,

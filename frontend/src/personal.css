@@ -15,3 +15,4 @@
 .personal-food-select:hover { background: color-mix(in srgb, var(--acc) 8%, transparent); border-radius: 10px; }
 .personal-stack details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
 @media (max-width: 380px) { .personal-nutrients { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.personal-report {white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.6 monospace;max-width:100%;}

@@ -193,6 +193,8 @@ const sideOf = value => {
   const out = { w: Number(v.w) || 0, r: Number(v.r) || 0, done: v.done === true }
   if (v.rir != null) out.rir = v.rir
   if (v.rpe != null) out.rpe = v.rpe
+  if (Number.isFinite(v.completedAt)) out.completedAt = v.completedAt
+  if (Number.isFinite(v.modifiedAt)) out.modifiedAt = v.modifiedAt
   if (v.weightOrigin === WEIGHT_ORIGIN_MANUAL) out.weightOrigin = WEIGHT_ORIGIN_MANUAL
   // A side can carry its own intensifier (issue #60): drop-sets and rest-pause bursts are logged
   // per limb, exactly like the main set, so the same {type, drops, clusters} shape rides on the

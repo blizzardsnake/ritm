@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import SwipeCards from '../components/SwipeCards.jsx'
 import { useNavigate } from 'react-router-dom'
+import { stampSetCompletion } from '../lib/personal/recording.js'
 import { useStore } from '../store/useStore.js'
 import { workoutControls } from '../lib/workout-controls.js'
 import { useUI } from '../store/useUI.js'
@@ -1078,6 +1079,7 @@ function ActiveWorkout() {
       // recomputed by toggleSide, so every completion check below still reads a single boolean.
       if (side) e.sets[i] = toggleSide(e.sets[i], side)
       else e.sets[i].done = !e.sets[i].done
+      e.sets[i] = stampSetCompletion(e.sets[i], { side, editing: editing || !!A.backfill })
       checked = e.sets[i].done
       // A finished row has no use for a plan set aside by a hold that did not finish.
       if (checked && e.sets[i].planSec != null) delete e.sets[i].planSec

@@ -30,7 +30,7 @@ import { HEVY_TITLE_MAP } from './hevy-id-map.js'
  * and CRLF. Splitting on commas breaks on the first exercise named "Bench Press, Close
  * Grip" — and a whole history would import shifted by one column without ever erroring.
  */
-export function parseCSV(text) {
+export function parseCSV(text, delimiter = ',') {
   const rows = []
   let row = [], field = '', quoted = false
   const s = String(text).replace(/^﻿/, '')
@@ -40,7 +40,7 @@ export function parseCSV(text) {
       if (c === '"') { if (s[i + 1] === '"') { field += '"'; i++ } else quoted = false }
       else field += c
     } else if (c === '"') quoted = true
-    else if (c === ',') { row.push(field); field = '' }
+    else if (c === delimiter) { row.push(field); field = '' }
     else if (c === '\n' || c === '\r') {
       if (c === '\r' && s[i + 1] === '\n') i++
       row.push(field); field = ''

@@ -2,6 +2,7 @@
 // exercise the exact shape the UI writes without mounting React or mutating store state.
 import { bestWeightForEntry, cleanupSg } from './history.js'
 import { hasCompletedWork, isSideSet } from './workout-model.js'
+import { eventTime } from './personal/time.js'
 
 // planSec is live-session bookkeeping: a hold displaced before it finished puts its plan aside so
 // the row still knows what it is asking for (Workout.startTimed). A finished session keeps only
@@ -80,6 +81,9 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snap
     d: active.d,
     start: active.start,
     end,
+    ...(active.timezone ? { timezone: active.timezone, offsetMinutes: active.offsetMinutes,
+      endOffsetMinutes: eventTime(end, { timezone: active.timezone }).offsetMinutes } : {}),
+    ...(active.recordedAt != null ? { recordedAt: active.recordedAt } : {}),
     routineIds,
     routineId: routineIds[0] ?? null,
     name: active.name,

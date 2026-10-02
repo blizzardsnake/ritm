@@ -1,6 +1,6 @@
 export const PERSONAL_SCHEMA_VERSION = 1
 export const PERSONAL_RECORDS = Object.freeze({
-  nutrition: ['foods', 'recipes', 'meals', 'dayCompleteness', 'targets'],
+  nutrition: ['foods', 'recipes', 'meals', 'dayCompleteness', 'targets', 'mealPlans'],
   health: ['daily', 'sleep', 'heartRate', 'activities'],
   progressGoals: ['goals', 'awards'],
   weeklyReviews: ['proposals', 'journal', 'overrides'],

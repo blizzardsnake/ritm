@@ -7,6 +7,8 @@ import { Button, TextField, TextArea, Switch } from '../components/ui.jsx'
 import PersonalFoodPicker, { nutrientText } from '../components/PersonalFoodPicker.jsx'
 import PersonalFoodEditor, { NutrientFields, nutrientLabels } from '../components/PersonalFoodEditor.jsx'
 import PersonalRecipeEditor from '../components/PersonalRecipeEditor.jsx'
+import PersonalMealPlan from '../components/PersonalMealPlan.jsx'
+import { mealDraftFromPlan, upsertPlannedMeal } from '../lib/personal/meal-plan.js'
 import { summarizeNutritionDay, snapshotMealItem, NUTRIENT_KEYS, parseAmount } from '../lib/personal/nutrition.js'
 import { saveMeal, deletePersonalRecord, setDayComplete, setNutritionTargets } from '../lib/personal/store-actions.js'
 import '../personal.css'
@@ -18,6 +20,7 @@ export default function Nutrition() {
   const nav = useNavigate()
   const [date, setDate] = useState(todayISO())
   const [meal, setMeal] = useState(null)
+  const [planContext, setPlanContext] = useState(null)
   const [selected, setSelected] = useState(null)
   const [grams, setGrams] = useState('100')
   const [density, setDensity] = useState('')
@@ -30,6 +33,7 @@ export default function Nutrition() {
   const target = S.nutrition?.targets?.find(item => item.id === 'default' && !item.deletedAt)
   const change = mutator => useStore.getState().updatePersonal(mutator)
   function beginMeal(record = null) {
+    setPlanContext(null)
     setMeal(record ? { ...structuredClone(record), time: localTime(record.at), timeChanged: false }
       : { name: '', note: '', time: localTime(Date.now()), items: [] })
     setSelected(null); setError('')
@@ -47,6 +51,10 @@ export default function Nutrition() {
   }
   function finishMeal() {
     try {
+      if (planContext) {
+        change(state => upsertPlannedMeal(state, planContext.planId, planContext.dayId, meal))
+        setMeal(null); setPlanContext(null); setError(''); return
+      }
       const at = meal.id && !meal.timeChanged ? meal.at : new Date(`${date}T${meal.time}:00`).getTime()
       const draft = { ...meal, at, date, ...(meal.timeChanged || !meal.id ? { timezone: undefined } : {}) }
       delete draft.time; delete draft.timeChanged
@@ -56,6 +64,8 @@ export default function Nutrition() {
   return <div className="narrow personal-stack">
     <div className="hdr"><div><h1>{t('Nutrition diary')}</h1><div className="sub">{t('Meals, exact weights and daily macros')}</div></div><Button variant="ghost" onClick={() => nav('/home')}>{t('Back')}</Button></div>
     <TextField type="date" aria-label={t('Diary date')} value={date} onChange={event => { if (event.target.value) { setDate(event.target.value); setMeal(null); setError('') } }} />
+    <PersonalMealPlan date={date} onRecord={(plan, planned) => { const draft = mealDraftFromPlan(plan, planned); beginMeal(); setMeal({ ...draft, time: draft.time || localTime(Date.now()) }) }}
+      onEdit={(plan, dayId, planned) => { setPlanContext({ planId: plan.id, dayId }); setMeal(planned ? { ...mealDraftFromPlan(plan, planned), id: planned.id, time: planned.time || '' } : { name: '', time: '', items: [], note: '' }); setSelected(null); setError('') }} />
     <section className="card personal-stack">
       <h2>{t('Recorded today')}</h2>
       <div className="personal-nutrients">{NUTRIENT_KEYS.map(key => <div key={key}>
@@ -76,7 +86,7 @@ export default function Nutrition() {
     {recipeEditor && <PersonalRecipeEditor recipe={recipeEditor.id ? recipeEditor : null} onClose={() => setRecipeEditor(null)} />}
     {foodEditor && <PersonalFoodEditor food={foodEditor.id ? foodEditor : null} onClose={() => setFoodEditor(null)} onSaved={food => { if (meal) { setSelected(food); setDensity('') } }} />}
     {meal && <section className="card personal-stack">
-      <h2>{meal.id ? t('Edit meal') : t('Add meal')}</h2>
+      <h2>{planContext ? t('Edit planned meal') : meal.id ? t('Edit meal') : t('Add meal')}</h2>
       <label>{t('Meal name')}<TextField placeholder={t('Breakfast, lunch…')} value={meal.name} onChange={event => setMeal({ ...meal, name: event.target.value })} /></label>
       <label>{t('Meal time')}<TextField type="time" value={meal.time} onChange={event => setMeal({ ...meal, time: event.target.value, timeChanged: true })} /></label>
       <label>{t('Food and preparation notes')}<TextArea value={meal.note || ''} onChange={event => setMeal({ ...meal, note: event.target.value })} /></label>
@@ -87,7 +97,7 @@ export default function Nutrition() {
         <div className="row" style={{ gap: 8 }}><Button onClick={addFood}>{t('Add food to meal')}</Button><Button variant="ghost" onClick={() => setSelected(null)}>{t('Choose another')}</Button></div>
       </div> : <PersonalFoodPicker onSelect={food => { setSelected(food); setDensity('') }} onManual={() => setFoodEditor({})}
         onEdit={food => food.source?.type === 'recipe' ? setRecipeEditor(food) : setFoodEditor(food)} />}
-      <div className="row" style={{ gap: 8 }}><Button disabled={!meal.items.length} onClick={finishMeal}>{t('Save meal')}</Button><Button variant="ghost" onClick={() => { setMeal(null); setError('') }}>{t('Cancel')}</Button></div>
+      <div className="row" style={{ gap: 8 }}><Button disabled={!planContext && !meal.items.length} onClick={finishMeal}>{planContext ? t('Save to plan') : t('Save meal')}</Button><Button variant="ghost" onClick={() => { setMeal(null); setPlanContext(null); setError('') }}>{t('Cancel')}</Button></div>
     </section>}
     {error && <p role="alert" className="personal-error">{error}</p>}
     {meals.map(record => <section className="card personal-stack" key={record.id}>

@@ -551,6 +551,7 @@ export default function Settings() {
         subtitle={t('Pull your history with a Hevy Pro API key')}
         accessory="chevron" onClick={importFromHevy} />
       <Row icon="upload" iconTint="var(--blue)" title={t('Import backup')} accessory="chevron" onClick={() => fileRef.current.click()} />
+      <Row icon="download" iconTint="var(--teal)" title={t('Analysis report')} subtitle={t('Training, nutrition and recovery in one file')} accessory="chevron" onClick={() => nav('/analysis')} />
       <Row icon="download" iconTint="var(--blue)" title={t('Export backup (JSON)')} subtitle={hasMedia ? t('Without photos and videos') : undefined} accessory="chevron" onClick={doExport} />
       {hasMedia && <Row icon="download" iconTint="var(--blue)" title={t('Export with photos & videos (.zip)')} accessory="chevron" onClick={doExportZip} />}
       {hasMedia && <MediaRow />}
