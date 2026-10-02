@@ -1,0 +1,228 @@
+/* RITM — shared surfaces and controls, offline system typography. */
+:root {
+  --bg:#131716; --bg-el:#191e1b; --surface:#202622; --surface-2:#2a312c; --surface-3:#363f38;
+  --label:#f4f6f0; --label-2:#aeb9af; --label-3:#89968c; --label-4:#67746b;
+  --sep:#3a453d; --sep-op:#2e3832; --green:#b5dcc4;
+  --r-sm:10px; --r:14px; --r-lg:20px; --r-xl:26px; --r-card:22px;
+  --on-acc:#162d20; --acc-2:#8fc9a6; --pad:20px;
+  --ritm-shadow:0 8px 24px -16px #0008;
+}
+:root[data-theme="light"] {
+  --bg:#f5f3ed; --bg-el:#f9f8f3; --surface:#fffefa; --surface-2:#f0f1e9; --surface-3:#e4e8de;
+  --label:#222b24; --label-2:#667168; --label-3:#747e76; --label-4:#929b93;
+  --sep:#dbe0d5; --sep-op:#e5e8df; --green:#29634a;
+  --on-acc:#fff; --acc-2:#204c39;
+  --ritm-shadow:0 8px 28px -18px #263d2826;
+}
+:root[data-accent="lime"] { --acc:var(--green); --on-acc:#162d20; --acc-2:#8fc9a6; }
+:root[data-theme="light"][data-accent="lime"] { --acc:var(--green); --on-acc:#fff; --acc-2:#204c39; }
+body { font-size:16px; line-height:1.4; letter-spacing:-.012em; }
+.hdr { margin:16px 0 24px; align-items:center; }
+.hdr h1 { font-weight:650; letter-spacing:-.045em; }
+.hdr .sub { line-height:1.5; margin-top:7px; }
+.card { padding:20px; border:1px solid var(--sep-op); box-shadow:var(--ritm-shadow); }
+.card h2 { font-size:15px; font-weight:600; color:var(--label); }
+.sect-b { border:1px solid var(--sep-op); box-shadow:var(--ritm-shadow); }
+.sect-t { font-weight:600; font-size:14px; }
+.lrow { padding-block:14px; }
+.lrow-t { font-size:16px; }
+.lrow-i { border-radius:10px; }
+.btn { min-height:46px; font-size:15px; border-radius:14px; }
+.btn.ghost,.btn.plain { font-weight:500; }
+.btn.sm { min-height:40px; font-size:13px; }
+.field { background:var(--surface-2); border:1px solid transparent; border-radius:12px; min-height:46px; font-size:16px; }
+.field:focus { border-color:var(--acc-line); }
+.sheet,.center { box-shadow:0 -8px 48px #0002; }
+#tabbar { gap:3px; background:color-mix(in srgb,var(--surface) 96%,transparent); border-color:var(--sep-op); padding-top:8px; }
+:root[data-theme="light"] #tabbar { background:color-mix(in srgb,var(--surface) 96%,transparent); }
+#tabbar button { min-width:0; min-height:51px; padding:7px 2px 4px; border-radius:14px; color:var(--label-2); }
+#tabbar button .icn { color:inherit; width:23px; height:23px; }
+#tabbar button.on:not(.start) { background:var(--acc-soft); }
+#tabbar button.start { margin-top:-16px; }
+#tabbar button.start .cir { width:48px; height:48px; border-radius:17px; box-shadow:0 6px 14px -8px #0007; }
+#tabbar button.start span { font-weight:500; }
+.ritm-brand { display:inline-flex; align-items:center; gap:12px; color:var(--acc); }
+.ritm-brand svg { width:48px; height:48px; padding:6px; border-radius:15px; background:var(--acc-soft); }
+.ritm-brand>span { color:var(--label); letter-spacing:.21em; font-size:27px; font-weight:650; }
+.ritm-brand.compact { gap:8px; }
+.ritm-brand.compact svg { width:28px; height:28px; border-radius:9px; padding:3px; }
+.ritm-brand.compact>span { font-size:13px; letter-spacing:.2em; }
+.ritm-page-brand { display:flex; justify-content:space-between; align-items:center; }
+.ritm-page-brand .iconbtn { width:40px; height:40px; background:var(--surface); border:1px solid var(--sep-op); border-radius:13px; color:var(--label-2); }
+.ritm-home-header .ritm-brand { margin-bottom:12px; }
+.ritm-home-header h1 { margin-top:8px; }
+.ritm-nutrition-page { gap:18px; }
+.ritm-nutrition-page .card { margin-bottom:0; }
+.ritm-nutrition-page>.hdr { margin:0 0 2px; }
+.ritm-date-navigation { display:flex; align-items:center; gap:5px; justify-content:center; }
+.ritm-date-field { flex:1; display:flex!important; flex-direction:row!important; justify-content:center; align-items:center; gap:8px; max-width:230px; }
+.ritm-date-field .icn { width:18px; height:18px; color:var(--label-2); }
+.ritm-date-field .field { width:auto; max-width:170px; border:0; background:transparent; font-weight:600; font-size:14px; padding:6px; min-height:40px; }
+.ritm-date-navigation .iconbtn { width:40px; height:40px; font-size:15px; }
+.ritm-nutrition-tabs.seg { min-height:48px; height:auto; padding:4px; border-radius:15px; background:var(--surface-2); border:1px solid var(--sep-op); }
+.ritm-nutrition-tabs .seg-sel { border-radius:11px; background:var(--surface); box-shadow:0 2px 6px #0001; }
+.ritm-nutrition-tabs button { min-height:38px; font-size:14px; font-weight:550; color:var(--label-2); }
+.ritm-nutrition-tabs button.on { color:var(--acc); }
+.ritm-section-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; min-width:0; }
+.ritm-section-heading>div { min-width:0; }
+.ritm-section-heading h2,.ritm-section-heading h3 { font-size:19px; line-height:1.25; font-weight:600; letter-spacing:-.025em; color:var(--label); margin:0; overflow-wrap:anywhere; }
+.ritm-section-heading>.row { flex:1; }
+.ritm-section-heading>.iconbtn { flex:none; }
+.ritm-eyebrow { font-size:11px; font-weight:550; color:var(--label-2); letter-spacing:.05em; display:block; margin-bottom:5px; }
+.ritm-status { flex:none; display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--label-2); background:var(--surface-2); padding:5px 8px; border-radius:20px; }
+.ritm-status i { width:5px; height:5px; border-radius:50%; background:var(--label-3); }
+.ritm-status.complete { color:var(--acc); background:var(--acc-soft); }
+.ritm-status.complete i { background:var(--acc); }
+.ritm-nutrition-summary { padding:22px; gap:20px; }
+.ritm-energy { display:grid; grid-template-columns:minmax(0,1fr) 140px; align-items:center; gap:12px; padding:4px 0 16px; border-bottom:1px solid var(--sep-op); }
+.ritm-energy-number { display:flex; align-items:baseline; gap:8px; }
+.ritm-energy-number>span:first-child { font-size:58px; line-height:1.06; font-weight:550; letter-spacing:-.065em; }
+.ritm-energy-number>.muted { font-size:14px; }
+.ritm-energy-context { display:flex; align-items:center; gap:10px; justify-content:flex-end; }
+.ritm-energy-context>.small { max-width:80px; }
+.ritm-energy>.ritm-macro-track,.ritm-energy>p { grid-column:1/-1; }
+.ritm-icon-tile { display:inline-flex; width:40px; height:40px; align-items:center; justify-content:center; flex:none; border-radius:13px; color:var(--acc); background:var(--acc-soft); font-size:20px; }
+.ritm-macro-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.ritm-macro { min-width:0; --macro-color:var(--acc); display:flex; flex-direction:column; gap:5px; }
+.ritm-macro.fat { --macro-color:#c7a066; }
+.ritm-macro.carbs { --macro-color:#9dacc9; }
+:root[data-theme="light"] .ritm-macro.fat { --macro-color:#967036; }
+:root[data-theme="light"] .ritm-macro.carbs { --macro-color:#6d7ea2; }
+.ritm-macro-label { font-size:12px; color:var(--label-2); display:flex; gap:6px; align-items:center; }
+.ritm-macro-label i { width:6px; height:6px; border-radius:50%; background:var(--macro-color); }
+.ritm-macro-number { display:flex; align-items:baseline; gap:4px; }
+.ritm-macro-number strong { font-size:28px; line-height:1.15; font-weight:550; letter-spacing:-.04em; }
+.ritm-macro-number>span { color:var(--label-2); font-size:12px; }
+.ritm-macro>.small { font-size:11px; }
+.ritm-macro-track { height:4px; border-radius:4px; background:var(--surface-3); overflow:hidden; margin-top:5px; }
+.ritm-macro-track i { display:block; height:100%; border-radius:inherit; background:var(--macro-color,var(--acc)); }
+.ritm-diary-actions { display:flex; gap:10px; }
+.ritm-diary-actions>.btn { flex:1; }
+.ritm-action-settings { width:46px; height:46px; border-radius:14px; background:var(--surface); border:1px solid var(--sep-op); font-size:21px; flex:none; color:var(--label-2); }
+.ritm-diary-food { display:flex; flex-direction:column; gap:5px; padding-block:7px; }
+.ritm-diary-food strong { font-weight:500; font-size:14px; white-space:nowrap; }
+.ritm-diary-food .row>span { min-width:0; overflow-wrap:anywhere; }
+.ritm-diary-meal>.row { padding-top:8px; border-top:1px solid var(--sep-op); }
+.ritm-day-completeness label { font-size:14px; }
+.ritm-day-completeness label span { max-width:250px; }
+.ritm-footnote { display:flex; align-items:flex-start; gap:8px; color:var(--label-2); font-size:12px; line-height:1.6; padding:2px 5px; }
+.ritm-footnote>.icn { width:17px; height:17px; flex:none; margin-top:2px; }
+.ritm-meal-plan { gap:18px; }
+.ritm-plan-overview { border-top:3px solid var(--acc); }
+.ritm-plan-overview .ritm-section-heading h2 { font-size:25px; letter-spacing:-.04em; }
+.ritm-editor-actions { display:flex; align-items:stretch; gap:8px; flex-wrap:wrap; }
+.ritm-editor-actions>.btn { flex:1 1 140px!important; width:auto; }
+.ritm-empty { display:flex; flex-direction:column; align-items:center; text-align:center; padding:32px 24px; gap:12px; }
+.ritm-empty h2,.ritm-empty h3 { font-size:20px; letter-spacing:-.03em; font-weight:600; color:var(--label); margin:0; }
+.ritm-empty>p { max-width:320px; color:var(--label-2); font-size:14px; line-height:1.5; }
+.ritm-empty>.icn { font-size:30px; color:var(--acc); }
+.ritm-empty>.ritm-icon-tile { width:52px; height:52px; border-radius:17px; font-size:25px; margin-bottom:5px; }
+.ritm-empty>.btn { width:auto; min-width:180px; }
+.ritm-empty.compact { background:var(--surface-2); border-radius:14px; padding:22px; }
+.ritm-plan-foods { display:flex; flex-direction:column; gap:10px; }
+.ritm-plan-foods>div { display:flex; align-items:baseline; justify-content:space-between; gap:12px; font-size:14px; }
+.ritm-plan-foods strong { font-weight:500; white-space:nowrap; }
+.ritm-disclosure { border-top:1px solid var(--sep-op); }
+.ritm-disclosure:first-child { border-top:0; }
+.personal-stack .ritm-disclosure>summary { justify-content:space-between; font-weight:500; font-size:14px; gap:12px; min-height:46px; list-style:none; }
+.ritm-disclosure>summary::-webkit-details-marker { display:none; }
+.ritm-disclosure>summary>.icn { width:17px; height:17px; color:var(--label-2); }
+.ritm-disclosure[open]>summary { margin-bottom:12px; }
+.ritm-plan-editor { gap:18px; }
+.ritm-plan-editor label { font-size:13px; color:var(--label-2); }
+.ritm-day-chips { display:flex; gap:6px; flex-wrap:wrap; }
+.ritm-day-chips>button { min-height:42px; min-width:36px; padding:8px 9px; border-radius:12px; background:var(--surface-2); color:var(--label-2); font-size:12px; display:flex; flex-direction:column; gap:2px; align-items:center; justify-content:center; }
+.ritm-day-chips>button.on { background:var(--acc); color:var(--on-acc); }
+.ritm-day-chips i { width:3px; height:3px; border-radius:50%; background:currentColor; }
+.ritm-schedule-meal { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--sep-op); }
+.ritm-schedule-meal>div:not(.row) { flex:1; min-width:0; overflow-wrap:anywhere; }
+.ritm-schedule-meal>.row { gap:0; }
+.ritm-schedule-meal strong { font-size:15px; font-weight:550; }
+.ritm-schedule-meal .iconbtn { width:36px; height:40px; font-size:16px; }
+.ritm-meal-time { font-size:12px; color:var(--label-2); min-width:34px; }
+.ritm-preview-days { max-height:330px; overflow:auto; display:flex; flex-direction:column; gap:20px; }
+.ritm-notice { padding:12px 16px; font-size:13px; border:1px solid var(--acc-line); color:var(--label); background:var(--acc-soft); border-radius:12px; }
+.personal-error { padding:10px 12px; background:color-mix(in srgb,var(--orange) 10%,transparent); border-radius:12px; }
+.personal-food-select strong { font-weight:550; font-size:15px; }
+.personal-food-select>span:last-child { font-size:11px; }
+.personal-food-list { border-top:1px solid var(--sep-op); }
+.personal-food-row { border-color:var(--sep-op); }
+/* Home is a dashboard: a strong daily action, then quiet evidence from the diary. */
+.ritm-home { display:flex; flex-direction:column; gap:18px; }
+.ritm-home>.card,.ritm-home-overview>.card { margin-bottom:0; }
+.ritm-home-header { margin:4px 0 3px; }
+.ritm-home-header h1 { font-size:40px; line-height:1.05; font-weight:600; letter-spacing:-.055em; }
+.ritm-home-header .sub { font-size:13px; }
+.ritm-home-header>.iconbtn { width:48px; height:48px; background:var(--surface); border:1px solid var(--sep-op); border-radius:16px; font-size:22px; box-shadow:var(--ritm-shadow); }
+.ritm-workout-hero { position:relative; isolation:isolate; overflow:hidden; background:#244b39; border-radius:28px; padding:24px; color:#eff8eb; min-height:286px; display:flex; flex-direction:column; box-shadow:0 18px 32px -22px #10261f88; }
+:root[data-theme="dark"] .ritm-workout-hero { background:#b8ddbd; color:#193524; }
+.ritm-hero-top { display:flex; justify-content:space-between; align-items:center; gap:12px; position:relative; z-index:1; font-size:11px; opacity:.82; }
+.ritm-hero-top>span:first-child { display:flex; align-items:center; gap:7px; letter-spacing:.1em; text-transform:uppercase; }
+.ritm-hero-top .icn { width:18px; height:18px; }
+.ritm-hero-date { white-space:nowrap; }
+.ritm-workout-hero .today-row { flex:1; background:none; border:0; margin:0; padding:27px 0 22px; display:flex; align-items:flex-start; flex-direction:column; gap:12px; position:relative; z-index:1; max-width:84%; }
+.ritm-workout-hero .today-row .lbl2 { font-size:12px; color:inherit; opacity:.7; margin-bottom:8px; }
+.ritm-workout-hero .today-row .ttl { font-size:31px; line-height:1.12; letter-spacing:-.045em; font-weight:550; color:inherit; max-width:460px; }
+.ritm-workout-hero .today-row .ss { font-size:12px; line-height:1.5; color:inherit; opacity:.76; margin-top:10px; }
+.ritm-workout-hero .today-row .tag { background:#ffffff1c!important; color:inherit!important; border:1px solid currentColor; font-size:11px; padding:3px 8px; opacity:.8; }
+.ritm-workout-hero .today-row>.chev { display:none; }
+.ritm-workout-hero .ritm-hero-action { position:relative; z-index:1; background:#f2f5e8; color:#244b39; min-height:48px; font-size:15px; justify-content:space-between; padding-inline:18px; }
+:root[data-theme="dark"] .ritm-workout-hero .ritm-hero-action { background:#213f2b; color:#f2f5e8; }
+.ritm-hero-action .icn { order:2; }
+.ritm-hero-secondary { position:relative; z-index:1; margin-top:4px; text-align:center; }
+.ritm-workout-hero .ritm-hero-secondary .btn { color:inherit; opacity:.78; font-size:11px; min-height:30px; }
+.ritm-workout-art { position:absolute; right:-56px; top:18px; width:230px; height:230px; opacity:.11; pointer-events:none; transform:rotate(-18deg); }
+.ritm-workout-art>svg { position:absolute; inset:0; width:100%; height:100%; stroke:currentColor; fill:none; stroke-width:1; }
+.ritm-workout-art>.icn { position:absolute; inset:65px; width:100px; height:100px; --icon-stroke:1; transform:rotate(18deg); }
+.ritm-home-overview { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.ritm-home-overview .card { padding:17px; display:flex; flex-direction:column; gap:9px; min-width:0; }
+.ritm-tile-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+.ritm-tile-top>.icn { width:15px; height:15px; color:var(--label-2); }
+.ritm-home-overview h2 { font-size:13px; font-weight:500; color:var(--label-2); margin:0; }
+.ritm-tile-number { display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; font-size:33px; line-height:1.05; font-weight:550; letter-spacing:-.04em; }
+.ritm-tile-number>span { font-size:11px; font-weight:400; letter-spacing:0; color:var(--label-2); }
+.ritm-home-overview .small { font-size:11px; line-height:1.5; }
+.ritm-tile-macros { display:flex; flex-wrap:wrap; gap:6px; margin-block:4px; font-size:11px; }
+.ritm-tile-macros>span { display:flex; gap:3px; color:var(--label); }
+.ritm-tile-macros i { font-style:normal; color:var(--label-2); }
+.ritm-tile-link { display:flex; align-items:center; gap:5px; margin-top:auto; padding-top:7px; color:var(--acc); font-size:11px; font-weight:550; }
+.ritm-tile-link>.icn { width:13px; height:13px; transform:rotate(45deg); }
+.ritm-home-training { background:var(--surface-2); }
+.ritm-week-bars { display:flex; gap:4px; align-items:end; min-height:22px; padding-top:6px; margin-block:4px; }
+.ritm-week-bars>i { height:8px; flex:1; border-radius:4px; background:var(--surface-3); }
+.ritm-week-bars>i.done { height:22px; background:var(--acc); }
+.ritm-home-calendar .ritm-section-heading { margin-bottom:12px; }
+.ritm-home-calendar .ritm-section-heading h2 { font-size:17px; }
+.ritm-home-calendar .wday { border-radius:12px; }
+.ritm-home-calendar .wday.today { background:var(--acc-soft); }
+.ritm-home-weight .big { font-size:44px; letter-spacing:-.055em; font-weight:550; }
+.ritm-plan-page>.hdr .ritm-brand,.ritm-stats-page>.hdr .ritm-brand { margin-bottom:12px; }
+.ritm-program-hero { position:relative; display:flex; justify-content:space-between; gap:20px; background:var(--surface-2); border:1px solid var(--sep-op); border-radius:26px; padding:26px; margin-bottom:26px; overflow:hidden; }
+.ritm-program-hero h2 { font-size:27px; letter-spacing:-.045em; font-weight:550; max-width:310px; margin:8px 0 20px; }
+.ritm-program-counts { display:flex; gap:30px; margin-bottom:24px; }
+.ritm-program-counts>div { display:flex; flex-direction:column; gap:3px; }
+.ritm-program-counts strong { font-size:36px; line-height:1.1; font-weight:550; letter-spacing:-.04em; }
+.ritm-program-counts span { font-size:12px; color:var(--label-2); }
+.ritm-program-hero>div { flex:1; position:relative; z-index:1; }
+.ritm-program-hero>div>.btn { width:auto; }
+.ritm-program-hero>.icn { width:160px; height:160px; color:var(--acc); opacity:.16; align-self:center; transform:rotate(-12deg); }
+.ritm-plan-page .item { border-radius:17px; border:1px solid var(--sep-op); padding:18px; box-shadow:var(--ritm-shadow); }
+.ritm-plan-page .item .tt { font-weight:550; }
+.ritm-plan-page .sec { font-size:15px; font-weight:600; padding-bottom:8px; }
+.ritm-stats-hero { background:var(--surface-2); border:1px solid var(--sep-op); border-radius:26px; padding:24px; margin-bottom:24px; }
+.ritm-stats-hero>.ritm-section-heading { margin-bottom:22px; }
+.ritm-stats-hero .tiles { gap:12px; }
+.ritm-stats-hero .tile { background:var(--surface); border:1px solid var(--sep-op); border-radius:17px; box-shadow:none; padding:18px; }
+.ritm-stats-hero .tile .v { font-size:39px; letter-spacing:-.05em; font-weight:550; }
+.ritm-stats-hero>.btn { margin-top:14px; justify-content:flex-start; font-size:13px; }
+@media (max-width:500px) { .ritm-program-hero>.icn { position:absolute; right:-16px; top:30px; width:145px; height:145px; opacity:.08; } .ritm-program-hero { padding:22px; } .ritm-program-hero h2 { font-size:25px; } .ritm-stats-hero { padding:20px; } .ritm-stats-hero .tiles { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } .ritm-stats-hero .tile { padding:15px; } .ritm-stats-hero .tile .v { font-size:32px; } }
+@media (min-width:1000px) { .ritm-home { max-width:900px; display:grid; grid-template-columns:1fr 1fr; gap:20px; } .ritm-home>.hdr,.ritm-workout-hero,.ritm-home-calendar { grid-column:1/-1; } .ritm-home-header h1 { font-size:48px; } .ritm-workout-hero { padding:30px 36px; min-height:300px; } .ritm-workout-hero .today-row { max-width:65%; padding-block:28px; } .ritm-workout-hero .today-row .ttl { font-size:42px; } .ritm-workout-hero .ritm-hero-action { width:300px; } .ritm-hero-secondary { text-align:start; } .ritm-workout-art { right:40px; top:18px; width:280px; height:280px; opacity:.18; } .ritm-workout-art>.icn { inset:85px; width:110px; height:110px; } .ritm-home-overview { grid-column:1/-1; gap:20px; } .ritm-home-overview .card { padding:23px; } .ritm-home-overview h2 { font-size:15px; } .ritm-tile-number { font-size:44px; } .ritm-home-overview .small,.ritm-tile-link,.ritm-tile-macros { font-size:13px; } .ritm-home-calendar .week { max-width:720px; margin:auto; } }
+@media (min-width:1000px) { #tabbar { width:620px; padding:8px 12px; border-radius:24px; bottom:20px; } #tabbar button { font-size:11px; } #tabbar button.start { margin-top:-16px; } .ritm-nutrition-page { max-width:680px; } .ritm-nutrition-summary { padding:28px; } .ritm-energy-number>span:first-child { font-size:72px; } }
+@media (max-width:380px) { :root { --pad:14px; } .ritm-nutrition-summary { padding:18px; } .ritm-energy { grid-template-columns:minmax(0,1fr) 115px; } .ritm-energy-number>span:first-child { font-size:48px; } .ritm-energy-context { gap:7px; } .ritm-energy-context .ritm-icon-tile { width:32px; height:32px; } .ritm-macro-grid { gap:10px; } .ritm-macro-label { font-size:11px; } #tabbar button { font-size:9px; } .ritm-section-heading h2 { font-size:17px; } }
+/* One centering rule at every width; never inherit only half a desktop layout. */
+#tabbar {
+  inset-inline:0; left:0; right:0; margin-inline:auto; transform:none;
+  width:min(620px,calc(100% - 24px)); bottom:calc(12px + var(--sab));
+  border:1px solid var(--sep-op); border-radius:22px;
+  box-shadow:0 10px 32px -14px #0004;
+}

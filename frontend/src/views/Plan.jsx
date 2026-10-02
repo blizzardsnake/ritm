@@ -4,6 +4,7 @@ import { DAYN, weekOrder, weekStartOf, uid, exCount, routineCount } from '../lib
 import { t } from '../lib/i18n.js'
 import { dayAssignSheet, dayAddRoutineSheet, starterPlanSheet, planToolsSheet, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
+import RitmBrand from '../components/RitmBrand.jsx'
 import { Button } from '../components/ui.jsx'
 import SwipeToDelete from '../components/SwipeToDelete.jsx'
 import { deleteRoutine } from '../lib/routines.js'
@@ -55,11 +56,12 @@ export default function Plan() {
     onConfirm: () => update(s => { deleteRoutine(s, r.id) })
   })
 
-  return <>
+  return <div className="ritm-plan-page">
     <div className="hdr">
-      <div><h1>{t('Plan')}</h1><div className="sub">{t('Your weekly routine')}</div></div>
+      <div><RitmBrand compact /><h1>{t('Training plan')}</h1><div className="sub">{t('Your weekly routine')}</div></div>
       <button className="iconbtn" onClick={planToolsSheet} aria-label={t('Share your plan')} title={t('Share your plan')}><Icon name="upload" /></button>
     </div>
+    <section className="ritm-program-hero"><div><span className="ritm-eyebrow">{t('Training plan')}</span><h2>{t('Your week, your rhythm')}</h2><div className="ritm-program-counts"><div><strong>{S.routines.length}</strong><span>{t('Routines')}</span></div><div><strong>{Object.values(S.week).filter(ids => ids?.length).length}</strong><span>{t('Training days')}</span></div></div><Button variant="primary" icon="plus" onClick={addRoutine}>{t('Add routine')}</Button></div><Icon name="calendar" /></section>
     {showCoach && <button className="coach-cta" onClick={() => nav('/coach')}>
       <span className="coach-cta-av"><Icon name="sparkles" /></span>
       <span className="coach-cta-t">
@@ -126,5 +128,5 @@ export default function Plan() {
         <Button icon="sparkles" onClick={starterPlanSheet}>{t('Load starter plan')}</Button>
       </>}
     </div></div>
-  </>
+  </div>
 }

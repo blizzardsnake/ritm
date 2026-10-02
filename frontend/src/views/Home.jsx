@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
+import { effectiveRoutines, effectiveRoutineIds, nextTrainingDay, streakWeeks, lastBW } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, weekStartOf, weekDayOffset, DAYS, DAYN } from '../lib/format.js'
 import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, starterPlanSheet, bwDeltaColor, weighInsSheet } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Icon from '../components/Icon.jsx'
+import RitmBrand from '../components/RitmBrand.jsx'
 import { Button } from '../components/ui.jsx'
 import { tappable } from '../lib/use-sheet-keyboard.js'
-import { glyphOf } from '../lib/glyphs.js'
 import { summarizeNutritionDay } from '../lib/personal/nutrition.js'
+import { mealCountText, nutrientDisplay } from '../lib/personal/ui-format.js'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -65,42 +66,24 @@ export default function Home() {
   // today's session shown right under the week strip
   const onToday = () => { if (S.active) nav('/workout'); else if (todayRoutines.length) startFlow(effectiveRoutineIds(S, todayISO())); else dayOverrideSheet(todayISO()) }
 
-  return <div className="narrow">
-    <div className="hdr">
-      <div><h1>{user ? t('Hi {0}', user.name) : 'openGym'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+  return <div className="narrow ritm-home">
+    <div className="hdr ritm-home-header">
+      <div><RitmBrand compact /><h1>{user ? t('Hi {0}', user.name) : t('Your day')}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>
 
-    <div className="card tappable" {...tappable(() => nav('/nutrition'))}>
-      <div className="row between"><h2>{t('Nutrition today')}</h2><span className="tag acc">{t('Open diary')}</span></div>
-      <div className="sub">{nutritionToday.itemCount ? `${nutritionToday.totals.kcal == null ? '—' : Math.round(nutritionToday.totals.kcal)} ${t('kcal')} · ${t('{0} meals', nutritionToday.mealCount)}` : t('No meals recorded for this day')}</div>
-      <div className="small muted">{nutritionToday.complete ? t('Day marked complete. Unknown macros still remain unknown.') : t('Partial diary: totals include recorded foods only.')}</div>
-    </div>
-
-    <div className="card">
-      <div className="row between" style={{ marginBottom: 8 }}>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
-        <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
-        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
-      </div>
-      <div className="week">{strip}</div>
-      {/* Once today's session is logged the row stops asking for it. The week strip already
-          knew (its dot goes 'done'); this row did not, so a finished day kept showing the
-          routine name behind a green Start tag and read as still outstanding (issue #4).
-          An in-progress session still wins — that one is happening right now. Tapping the
-          row keeps working, so a second session in one day is a tap away, just not urged. */}
+    <section className={'ritm-workout-hero' + (doneToday && !S.active ? ' done' : '')}>
+      <div className="ritm-hero-top"><span><Icon name="dumbbell" />{t('Training')}</span><span className="ritm-hero-date">{t('Today')} · {today.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' })}</span></div>
+      <div className="ritm-workout-art" aria-hidden="true"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="88" /><circle cx="100" cy="100" r="66" /><circle cx="100" cy="100" r="44" /><path d="M12 100h35m106 0h35M100 12v35m0 106v35" /></svg><Icon name={S.active ? 'timer' : doneToday ? 'checkCircle' : routine ? 'dumbbell' : 'moon'} /></div>
       <div className="today-row" {...tappable(onToday)}>
         <div className="row" style={{ gap: 9, minWidth: 0 }}>
-          <span className="lrow-i" style={{ background: S.active ? 'var(--orange)' : doneToday ? 'var(--surface-3)' : routine ? 'var(--acc)' : 'var(--surface-3)' }}>
-            <Icon name={S.active ? (editingSaved ? 'pencil' : 'timer') : doneToday ? 'checkCircle' : routine ? glyphOf(routine.emoji) : 'moon'}
-              style={doneToday && !S.active ? { color: 'var(--green)' } : undefined} />
-          </span>
           <div style={{ minWidth: 0 }}>
-            <div className="lbl2">{t('Today')}</div>
+            <div className="lbl2">{S.active ? t('Keep your rhythm') : doneToday ? t('A good day of training') : routine ? t('Your next step') : t('Recovery is part of progress')}</div>
             <div className="ttl">{S.active ? (editingSaved ? S.active.name : t('{0} — in progress', S.active.name))
               : doneToday ? (doneToday.name ? t('{0} — done', doneToday.name) : t('Workout done'))
               : routine ? todayName : t('Rest day')}{todayOvr && routine && !doneToday ? ' · ' + t('rescheduled') : ''}</div>
             {next && !doneToday && <div className="ss">{t('Next session: {0}, {1}', t(DAYN[next.weekday]), next.routine.name)}</div>}
+            {routine && !S.active && !doneToday && <div className="ss">{t('{0} exercises', todayRoutines.reduce((sum, item) => sum + item.ex.length, 0))}</div>}
           </div>
         </div>
         {S.active ? <span className="tag" style={{ color: 'var(--orange)', background: 'color-mix(in srgb,var(--orange) 16%,transparent)' }}>{editingSaved ? t('Edit') : t('Resume')}</span>
@@ -108,17 +91,44 @@ export default function Home() {
           : routine ? <span className="tag acc">{t('Start')}</span>
           : <Icon name="plus" className="chev" />}
       </div>
-      {/* The row above starts today's plan in one tap, and so does the Start button in the tab
-          bar — which is the whole problem when you want something else. Both jump straight into
-          the planned session whenever there is one, so the Start screen (a freestyle session,
-          and your other routines) is only reachable on a day with nothing planned. The one other
-          way in, "Choose a different workout" on the weigh-in sheet, does not exist when the
-          weigh-in is switched off. This is that door, and it starts nothing on its own. */}
-      {!S.active && <div style={{ display: 'flex', justifyContent: 'center', marginTop: 4 }}>
-        <Button size="sm" variant="ghost" className="dim" icon="reset" onClick={() => nav('/workout')}>
+      <Button className="ritm-hero-action" icon={S.active ? 'play' : doneToday ? 'chart' : routine ? 'play' : 'plus'} onClick={() => S.active || (!doneToday && routine) ? onToday() : nav(doneToday ? '/stats' : '/workout')}>
+        {S.active ? (editingSaved ? t('Edit workout') : t('Resume workout')) : doneToday ? t('See your results') : routine ? t('Start workout') : t('Choose a workout')}
+      </Button>
+      {!S.active && <div className="ritm-hero-secondary">
+        <Button size="sm" variant="ghost" icon="reset" onClick={() => nav('/workout')}>
           {t('Choose a different workout')}
         </Button>
       </div>}
+    </section>
+
+    <div className="ritm-home-overview">
+      <div className="card tappable ritm-home-food" {...tappable(() => nav('/nutrition'))}>
+        <div className="ritm-tile-top"><span className="ritm-icon-tile"><Icon name="nutrition" /></span><Icon name="chevronRight" /></div>
+        <h2>{t('Nutrition today')}</h2>
+        <div className="ritm-tile-number">{nutrientDisplay(nutritionToday.totals.kcal)}<span>{t('kcal')}</span></div>
+        <p className="small muted">{nutritionToday.itemCount ? mealCountText(nutritionToday.mealCount) : t('Start with breakfast')}</p>
+        <div className="ritm-tile-macros">{[['protein', 'P'], ['fat', 'F'], ['carbs', 'C']].map(([key, label]) => <span key={key}><i>{t(label)}</i>{nutrientDisplay(nutritionToday.totals[key])}</span>)}</div>
+        <p className="small muted">{nutritionToday.complete ? t('Day complete') : t('Partial diary')}</p>
+        <span className="ritm-tile-link">{t('Open diary')}<Icon name="arrowUp" /></span>
+      </div>
+      <div className="card tappable ritm-home-training" {...tappable(() => nav('/stats'))}>
+        <div className="ritm-tile-top"><span className="ritm-icon-tile"><Icon name="chart" /></span><Icon name="chevronRight" /></div>
+        <h2>{t('This week')}</h2>
+        <div className="ritm-tile-number">{wThisWeek}<span>{t('Workouts')}</span></div>
+        <p className="small muted">{plannedPerWeek ? t('{0} training days planned', plannedPerWeek) : t('At your own pace')}</p>
+        <div className="ritm-week-bars" aria-hidden="true">{Array.from({ length: 7 }, (_, index) => { const day = new Date(today); day.setDate(day.getDate() - weekDayOffset(day.getDay(), ws) + index); const done = doneDays.has(isoOf(day)); return <i key={index} className={done ? 'done' : ''} /> })}</div>
+        <span className="ritm-tile-link">{t('View progress')}<Icon name="arrowUp" /></span>
+      </div>
+    </div>
+
+    <div className="card ritm-home-calendar">
+      <div className="ritm-section-heading"><h2>{t('Your training rhythm')}</h2><button className="iconbtn" onClick={calendarSheet} aria-label={t('Calendar')}><Icon name="calendar" /></button></div>
+      <div className="row between" style={{ marginBottom: 8 }}>
+        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w - 1)} aria-label={t('Previous week')}><Icon name="chevronLeft" /></button>
+        <div className="small muted" style={{ fontWeight: 500 }}>{wkLabel}</div>
+        <button className="iconbtn" style={{ width: 30, height: 30, fontSize: 15 }} onClick={() => setWeekOffset(w => w + 1)} aria-label={t('Next week')}><Icon name="chevronRight" /></button>
+      </div>
+      <div className="week">{strip}</div>
     </div>
 
     {/* Jump to the gym check-in cards (QR membership codes). Shown here as a quick tap on
@@ -150,7 +160,7 @@ export default function Home() {
       </div>
     )}
 
-    {S.showWeightCard !== false && <div className="card">
+    {S.showWeightCard !== false && <div className="card ritm-home-weight">
       <div className="row between bw-head" style={{ marginBottom: 6 }}>
         <h2 style={{ margin: 0 }}>{t('Body weight')}</h2>
         <div className="row" style={{ gap: 8 }}>

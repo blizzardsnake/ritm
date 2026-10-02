@@ -10,6 +10,7 @@ import { bwSheet, goalSheet, calendarSheet, workoutDetailSheet, exerciseHistoryS
 import LineChart from '../components/LineChart.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 import Icon from '../components/Icon.jsx'
+import RitmBrand from '../components/RitmBrand.jsx'
 import BodyMap, { BodyMapLegend } from '../components/BodyMap.jsx'
 import { loadOfWorkouts, muscleBalanceWindow, rankOf, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
 import { fatigueOf, strengthOf, STRENGTH_FLOOR, LB_TO_KG } from '../lib/recovery.js'
@@ -449,17 +450,18 @@ export default function Stats() {
   if (showE1) exOpts.push({ value: 'e1rm', label: t('Est. 1RM') })
   if (showEff) exOpts.push({ value: 'effort', label: t('Effort') })
 
-  return <>
-    <div className="hdr"><div><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
+  return <div className="ritm-stats-page">
+    <div className="hdr"><div><RitmBrand compact /><h1>{t('Stats')}</h1><div className="sub">{t('Progress & history')}</div></div>
       <button className="iconbtn" onClick={() => nav('/history')} aria-label={t('History')}><Icon name="history" /></button></div>
 
-    <div className="tiles">
+    <section className="ritm-stats-hero"><div className="ritm-section-heading"><div><span className="ritm-eyebrow">{t('Your progress')}</span><h2>{t('Every session leaves a mark')}</h2></div><span className="ritm-icon-tile"><Icon name="chartLine" /></span></div><div className="tiles">
       <div className="tile"><div className="l"><Icon name="dumbbell" />{t('Workouts')}</div><div className="v">{workouts.length}</div></div>
       <div className="tile"><div className="l"><Icon name="calendar" />{t('This month')}</div><div className="v">{monthW}</div></div>
       <div className="tile"><div className="l"><Icon name="flame" />{t('Week streak')}</div><div className="v">{streakWeeks(S)}</div></div>
       <div className="tile"><div className="l"><Icon name="scale" />{t('Weight 30d')}</div><div className="v" style={{ fontSize: 22, color: bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW(S) || {}).w || 0) }}>{bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
 
     </div>
+    <Button variant="ghost" icon="share" onClick={() => nav('/analysis')}>{t('Share for analysis')}</Button></section>
 
     <div className="card">
       <h2>{t('Activity — last 12 months')}</h2>
@@ -539,5 +541,5 @@ export default function Stats() {
       </div>
       <div className="list">{[...workouts].reverse().slice(0, 6).map(w => <WorkoutRow key={w.id} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
     </>}
-  </>
+  </div>
 }

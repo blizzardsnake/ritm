@@ -1,15 +1,15 @@
 {
-  "name": "openGym",
-  "short_name": "openGym",
-  "description": "Personal gym & body weight tracker",
+  "name": "RITM",
+  "short_name": "RITM",
+  "description": "Your training, nutrition and recovery in one rhythm",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0c0e12",
-  "theme_color": "#0c0e12",
+  "background_color": "#131716",
+  "theme_color": "#131716",
   "icons": [
-    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "ritm-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }

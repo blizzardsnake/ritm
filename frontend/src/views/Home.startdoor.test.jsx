@@ -43,6 +43,20 @@ const mount = () => act(() => root.render(<Home />))
 const door = () => [...host.querySelectorAll('button')].find(b => b.textContent.includes('Choose a different workout'))
 
 describe('Home — the way to the Start screen when a plan already owns today', () => {
+  it('the new primary action starts the planned session exactly once', () => {
+    setS(); mount()
+    const action = [...host.querySelectorAll('button')].find(button => button.textContent === 'Start workout')
+    expect(action).toBeTruthy()
+    act(() => action.click())
+    expect(startFlow).toHaveBeenCalledExactlyOnceWith(['r1'])
+  })
+
+  it('the rest-day primary action opens the picker without starting a session', () => {
+    setS({ week: {} }); mount()
+    const action = [...host.querySelectorAll('button')].find(button => button.textContent === 'Choose a workout')
+    act(() => action.click())
+    expect(nav).toHaveBeenCalledWith('/workout'); expect(startFlow).not.toHaveBeenCalled()
+  })
   it('offers the door on a planned day, where the Start button would start the plan', () => {
     setS(); mount()
     expect(door()).toBeTruthy()

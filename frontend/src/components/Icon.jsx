@@ -68,6 +68,9 @@ const P = {
   stretch: <><circle cx="14.4" cy="5.4" r="1.9" /><path d="M14.4 8.2c-3 1.4-5 4-5.8 7.4" /><path d="M8.6 15.6 6.2 20M8.6 15.6l4.6 4.4" /><path d="M12.6 9.6 18 12" /></>,
 
   /* ---- actions ---- */
+  share: <><path d="M12 15V3.8M8 7.8l4-4 4 4M7.4 9.8H5.6a1.8 1.8 0 0 0-1.8 1.8v7a1.8 1.8 0 0 0 1.8 1.8h12.8a1.8 1.8 0 0 0 1.8-1.8v-7a1.8 1.8 0 0 0-1.8-1.8h-1.8" /></>,
+  sliders: <><path d="M4 7h16M4 17h16" /><circle cx="9" cy="7" r="2.6" fill="var(--surface)" /><circle cx="15" cy="17" r="2.6" fill="var(--surface)" /></>,
+  plusCircle: <><circle cx="12" cy="12" r="8.2" /><path d="M12 8v8M8 12h8" /></>,
   plus: <path d="M12 5.2v13.6M5.2 12h13.6" />,
   minus: <path d="M5.2 12h13.6" />,
   check: <path d="m4.8 12.6 4.8 4.8L19.2 6.8" />,
