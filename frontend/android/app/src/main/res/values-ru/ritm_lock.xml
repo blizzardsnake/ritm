@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ritm_unlock_title">Войти в RITM</string>
+    <string name="ritm_unlock_subtitle">Твои тренировки, питание и прогресс</string>
+    <string name="ritm_use_password">Ввести пароль</string>
+</resources>

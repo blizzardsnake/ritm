@@ -19,7 +19,7 @@ describe('Android backup rules', () => {
     expect(manifest).toMatch(/android:allowBackup="true"/)
   })
 
-  it('both leave the media folder out of the cloud backup, and only that', () => {
+  it('cloud backup excludes large media and device credentials; transfer keeps media but not credentials', () => {
     expect(legacy).toMatch(/<full-backup-content>[\s\S]*<\/full-backup-content>/)
     expect(legacy).toMatch(EXCLUDE)
     const cloud = modern.match(/<cloud-backup>([\s\S]*?)<\/cloud-backup>/)?.[1] || ''
@@ -27,8 +27,12 @@ describe('Android backup rules', () => {
     // An <include> would turn either list into an allowlist and drop everything else.
     expect(legacy).not.toMatch(/<include/)
     expect(modern).not.toMatch(/<include/)
-    // Device transfer is left alone, so it takes everything.
-    expect(modern).not.toMatch(/<device-transfer/)
+    const deviceCredential = /<exclude\s+domain="sharedpref"\s+path="ritm_lock.xml"\s*\/>/
+    expect(legacy).toMatch(deviceCredential)
+    expect(cloud).toMatch(deviceCredential)
+    const transfer = modern.match(/<device-transfer>([\s\S]*?)<\/device-transfer>/)?.[1] || ''
+    expect(transfer).toMatch(deviceCredential)
+    expect(transfer).not.toMatch(EXCLUDE)
   })
 
   it('no comment carries a double dash, which breaks the Android build (v1.3.6)', () => {

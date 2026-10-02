@@ -23,6 +23,7 @@ import { getMediaStatus, subscribeMediaStatus, pendingRefCount } from '../lib/me
 import { limitsFrom, fmtMB, MB } from '../lib/media-limits.js'
 import { setRestAccent } from '../lib/rest-alert.js'
 import { checkForUpdate, downloadAndInstall } from '../lib/update.js'
+import { ALLOW_UPSTREAM_APK_UPDATES } from '../lib/personal/edition.js'
 import { forgetCoach } from '../lib/coach-api.js'
 import { starterPlanSheet, confirmSheet, importFromApp, importFromHevy, equipmentProfileSheet, plateInventorySheet, menuSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
@@ -78,7 +79,7 @@ export default function Settings() {
     // On iOS and the web this check is skipped and the update row never appears. isAndroid()
     // already answers false off the mobile build; the MOBILE check on top keeps the web bundle
     // from even asking (and from calling gitlab.com on every Settings visit).
-    if (!MOBILE) return
+    if (!MOBILE || !ALLOW_UPSTREAM_APK_UPDATES) return
     isAndroid().then(ok => { setAndroid(ok); if (ok) checkForUpdate().then(setUpdateInfo).catch(() => {}) })
   }, [])
 
@@ -507,6 +508,9 @@ export default function Settings() {
     {/* ---------- equipment ---------- */}
     <EquipmentCard S={S} update={update} />
 
+    <Section title={t('Privacy')}>
+      <Row icon="fingerprint" iconTint="var(--acc)" title={t('App protection')} subtitle={t('Optional password and fingerprint unlock')} accessory="chevron" onClick={() => nav('/protection')} />
+    </Section>
     {/* ---------- appearance ---------- */}
     <Section title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>
       <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
@@ -579,7 +583,7 @@ export default function Settings() {
         On Android the row is always there — it checks on demand and installs when a release is
         newer (checksum verified, see onUpdateRowClick). On the web the app updates with its
         server, so the row points at the APK for the phone instead. iOS has no APK: nothing. */}
-    {(!MOBILE || android) && <Section title={t('Updates')}
+    {ALLOW_UPSTREAM_APK_UPDATES && (!MOBILE || android) && <Section title={t('Updates')}
       footer={MOBILE ? t('Releases are checked on gitlab.com. The download is verified against its checksum before the installer opens.') : t('The web app updates together with your server. The Android app installs its own updates from here.')}>
       {MOBILE
         ? <Row icon="download" iconTint="var(--acc)"

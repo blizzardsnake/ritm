@@ -1,8 +1,9 @@
 {
-  "appId": "ch.duartesantos.opengym",
-  "appName": "openGym",
+  "appId": "local.opengym.personal",
+  "appName": "RITM",
   "webDir": "dist",
-  "backgroundColor": "#0c0e12",
+  "backgroundColor": "#090c11",
+  "loggingBehavior": "none",
   "android": {
     "allowMixedContent": false
   }

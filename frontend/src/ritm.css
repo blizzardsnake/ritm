@@ -1,22 +1,27 @@
-/* RITM — shared surfaces and controls, offline system typography. */
+/* RITM — shared surfaces and controls. Manrope is bundled for offline use. */
+@font-face { font-family:Manrope; src:url('/fonts/Manrope-Variable.ttf') format('truetype'); font-weight:200 800; font-display:swap; }
 :root {
-  --bg:#131716; --bg-el:#191e1b; --surface:#202622; --surface-2:#2a312c; --surface-3:#363f38;
-  --label:#f4f6f0; --label-2:#aeb9af; --label-3:#89968c; --label-4:#67746b;
-  --sep:#3a453d; --sep-op:#2e3832; --green:#b5dcc4;
+  --bg:#090c11; --bg-el:#10151d; --surface:#151b24; --surface-2:#202936; --surface-3:#303d4b;
+  --label:#f7f9fc; --label-2:#a9b5c6; --label-3:#8998ac; --label-4:#66788f;
+  --sep:#303d4b; --sep-op:#273240; --green:#ddff73;
   --r-sm:10px; --r:14px; --r-lg:20px; --r-xl:26px; --r-card:22px;
-  --on-acc:#162d20; --acc-2:#8fc9a6; --pad:20px;
-  --ritm-shadow:0 8px 24px -16px #0008;
+  --on-acc:#17200b; --acc-2:#c2e957; --pad:20px;
+  --ritm-shadow:0 16px 40px -24px #000c;
 }
 :root[data-theme="light"] {
-  --bg:#f5f3ed; --bg-el:#f9f8f3; --surface:#fffefa; --surface-2:#f0f1e9; --surface-3:#e4e8de;
-  --label:#222b24; --label-2:#667168; --label-3:#747e76; --label-4:#929b93;
-  --sep:#dbe0d5; --sep-op:#e5e8df; --green:#29634a;
-  --on-acc:#fff; --acc-2:#204c39;
-  --ritm-shadow:0 8px 28px -18px #263d2826;
+  --bg:#eff2f7; --bg-el:#f7f9fc; --surface:#ffffff; --surface-2:#e9edf4; --surface-3:#dbe2ec;
+  --label:#101928; --label-2:#52647b; --label-3:#667a94; --label-4:#8395ad;
+  --sep:#d6dfeb; --sep-op:#dce4ef; --green:#456400;
+  --on-acc:#fff; --acc-2:#354d00;
+  --ritm-shadow:0 16px 40px -24px #25406344;
 }
-:root[data-accent="lime"] { --acc:var(--green); --on-acc:#162d20; --acc-2:#8fc9a6; }
-:root[data-theme="light"][data-accent="lime"] { --acc:var(--green); --on-acc:#fff; --acc-2:#204c39; }
-body { font-size:16px; line-height:1.4; letter-spacing:-.012em; }
+:root[data-accent="lime"] { --acc:var(--green); --on-acc:#17200b; --acc-2:#c2e957; }
+:root[data-theme="light"][data-accent="lime"] { --acc:var(--green); --on-acc:#fff; --acc-2:#354d00; }
+body { font-family:Manrope,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:16px; line-height:1.45; letter-spacing:-.018em; isolation:isolate; }
+body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:-1; background:radial-gradient(ellipse at 100% 0%,#8ae5e218,transparent 50%),radial-gradient(ellipse at -12% 54%,#b4d74814,transparent 45%),linear-gradient(118deg,transparent 39.8%,#aaceff0a 40%,transparent 40.2%),linear-gradient(118deg,transparent 69.8%,#aaceff0a 70%,transparent 70.2%); }
+body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:-1; opacity:.17; background-image:radial-gradient(#a1b7d7 0.55px,transparent 0.55px); background-size:18px 18px; mask-image:linear-gradient(transparent,#000 50%,transparent); }
+button,input,textarea,select { font-family:inherit; }
+#app { padding-bottom:calc(164px + var(--sab)); }
 .hdr { margin:16px 0 24px; align-items:center; }
 .hdr h1 { font-weight:650; letter-spacing:-.045em; }
 .hdr .sub { line-height:1.5; margin-top:7px; }
@@ -226,3 +231,81 @@ body { font-size:16px; line-height:1.4; letter-spacing:-.012em; }
   border:1px solid var(--sep-op); border-radius:22px;
   box-shadow:0 10px 32px -14px #0004;
 }
+/* The raised action is independent of the five equal navigation slots. */
+#tabbar { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center; padding:8px 8px; gap:3px; }
+#tabbar button.start { position:absolute; inset-inline:auto; left:50%; right:auto; top:-63px; margin:0; transform:translateX(-50%); flex-direction:row; gap:8px; width:max-content; max-width:calc(100vw - 40px); min-width:128px; height:51px; min-height:51px; padding:0 20px 0 10px; background:#ddff73; color:#17200b; border:1px solid #e8ffa0; border-radius:18px; box-shadow:0 8px 28px -10px #ddff7355,0 4px 16px #0004; }
+#tabbar button.start .cir { position:relative; width:33px; height:33px; border-radius:11px; background:transparent; color:inherit; box-shadow:none; }
+#tabbar button.start span { color:inherit; font-size:13px; font-weight:800; }
+#tabbar button.start.rec { background:var(--orange); border-color:var(--orange); color:#10151d; }
+#tabbar button.start.rec .cir { background:transparent; color:inherit; box-shadow:none; }
+#tabbar button.start.rec span { color:inherit; }
+#tabbar button.start.rec .cir::after { display:none; }
+#tabbar button.start:active { transform:translateX(-50%) scale(.96); }
+.ritm-program-hero,.ritm-workout-hero,.ritm-stats-hero { --label:#f7f9fc; --label-2:#b6c4d5; --label-3:#91a5bd; --surface:#1b2732; --surface-2:#273640; --sep-op:#354335; --acc:#ddff73; --on-acc:#17200b; --acc-soft:#ddff731c; color:var(--label); background:radial-gradient(ellipse at 105% 15%,#c1ee6c30,transparent 55%),linear-gradient(120deg,#1a2533,#0e141c 62%); border:1px solid #354335; box-shadow:0 20px 48px -24px #050d1b70; position:relative; overflow:hidden; }
+.ritm-program-hero::before,.ritm-workout-hero::before { content:''; position:absolute; width:480px; height:480px; border:1px solid #ddff7338; border-radius:50%; right:-230px; top:-240px; box-shadow:0 0 0 35px #ddff7307,0 0 0 70px #ddff7306,0 0 0 106px #ddff7305; pointer-events:none; }
+.ritm-program-hero>div,.ritm-workout-hero>div,.ritm-workout-hero>button { position:relative; }
+.ritm-program-hero h2 { font-size:34px; font-weight:750; letter-spacing:-.065em; max-width:380px; line-height:1.08; }
+.ritm-program-hero>.icn { opacity:.5; color:#ddff73; transform:rotate(-14deg); filter:drop-shadow(0 8px 28px #ddff7322); }
+.ritm-program-counts strong { font-weight:750; }
+.ritm-workout-hero .ritm-hero-action,.ritm-program-hero .btn.primary { color:#17200b; background:linear-gradient(110deg,#e7ff9a,#cbf357); font-weight:800; box-shadow:0 5px 24px -12px #ddff73b0; }
+.ritm-stats-hero .tile { background:#ffffff07; border:1px solid #ffffff10; }
+.ritm-stats-hero .tile .v { font-weight:750; }
+.ritm-nutrition-summary { background:radial-gradient(ellipse at 100% 0%,var(--acc-soft),transparent 60%),var(--surface); }
+.ritm-brand>span { font-weight:800; letter-spacing:.16em; }
+.ritm-brand svg { background:var(--acc); color:var(--on-acc); box-shadow:0 4px 18px -10px var(--acc); }
+.hdr h1,.ritm-home-header h1 { font-weight:750; letter-spacing:-.06em; }
+.btn.primary { font-weight:750; box-shadow:0 7px 22px -15px var(--acc); }
+.card,.sect-b,.list { transition:background .2s,border-color .2s,box-shadow .2s; }
+.ritm-loader { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; min-height:180px; color:var(--label-2); }
+.ritm-loader.full { min-height:100dvh; background:radial-gradient(ellipse at 60% 25%,var(--acc-soft),transparent 55%),var(--bg); }
+.ritm-loader-orbit { width:152px; height:152px; border-radius:50%; display:grid; place-items:center; position:relative; border:1px solid var(--sep-op); box-shadow:0 0 0 18px color-mix(in srgb,var(--surface) 70%,transparent),0 0 0 19px var(--sep-op); }
+.ritm-loader-orbit>.ritm-brand { flex-direction:column; gap:12px; }
+.ritm-loader-orbit .ritm-brand svg { width:48px; height:48px; border-radius:17px; padding:9px; }
+.ritm-loader-orbit>i { position:absolute; inset:-1px; border:2px solid transparent; border-top-color:var(--acc); border-radius:50%; animation:ritm-orbit 1.5s linear infinite; }
+.ritm-loader-pulse { display:flex; gap:5px; height:20px; align-items:center; }
+.ritm-loader-pulse i { width:4px; height:8px; border-radius:4px; background:var(--acc); animation:ritm-pulse .9s ease-in-out infinite; animation-delay:calc(var(--i) * .12s); }
+.ritm-loader p { font-size:13px; }
+.ritm-button-spinner { width:17px; height:17px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:ritm-orbit .8s linear infinite; flex:none; }
+@keyframes ritm-orbit { to { transform:rotate(360deg); } }
+@keyframes ritm-pulse { 50% { height:20px; opacity:.45; } }
+#tabbar,:root[data-theme="light"] #tabbar { background:color-mix(in srgb,#111822 97%,transparent); border-color:#34404e; box-shadow:0 15px 35px -15px #0008; }
+#tabbar button { color:#b4c1d2; }
+#tabbar button.on:not(.start) { background:#ddff7316; color:#ddff73; }
+.ritm-lock-page { min-height:100dvh; width:100%; display:flex; align-items:center; justify-content:center; padding:calc(32px + var(--sat)) 24px 36px; gap:72px; background:radial-gradient(ellipse at 20% 30%,#ddff7315,transparent 45%),radial-gradient(ellipse at 95% 90%,#56c9ed18,transparent 50%),#090c11; color:#f7f9fc; --label:#f7f9fc; --label-2:#b1c0d4; --surface:#192431; --surface-2:#202d3a; --acc:#ddff73; --acc-soft:#ddff731a; --on-acc:#17200b; --sep-op:#303e4d; }
+.ritm-lock-card { width:100%; max-width:420px; padding:32px; border:1px solid #3a48574d; border-radius:30px; background:linear-gradient(135deg,#ffffff0c,#ffffff03); box-shadow:0 32px 80px -36px #000; }
+.ritm-lock-card>.ritm-brand { margin-bottom:42px; }
+.ritm-lock-card>.ritm-eyebrow { color:#ddff73; font-size:10px; letter-spacing:.18em; }
+.ritm-lock-card h1 { font-size:40px; font-weight:750; letter-spacing:-.055em; line-height:1.08; margin:12px 0; }
+.ritm-lock-card>.sub { color:#b1c0d4; font-size:14px; line-height:1.6; margin-bottom:28px; }
+.ritm-lock-card form { display:flex; flex-direction:column; gap:14px; }
+.ritm-password-label { display:block; color:#b1c0d4; font-size:12px; }
+.ritm-password-input { display:flex; align-items:center; gap:9px; margin-top:9px; padding:0 10px 0 14px; border:1px solid #384b60; border-radius:14px; background:#17212d; }
+.ritm-password-input>.icn { width:19px; height:19px; color:#809bb4; flex:none; }
+.ritm-password-input>.field { min-width:0; background:transparent; padding-inline:0; border:0; }
+.ritm-password-input:focus-within { border-color:#ddff7380; box-shadow:0 0 0 3px #ddff7308; }
+.ritm-password-input>.iconbtn { width:36px; height:36px; flex:none; color:#b1c0d4; }
+.ritm-lock-card .btn { width:100%; min-height:51px; justify-content:center; }
+.ritm-lock-card .btn.primary { background:linear-gradient(110deg,#e8ffa0,#cbf357); color:#17200b; font-weight:800; }
+.ritm-lock-card .btn.tinted { background:#ddff730b; border:1px solid #ddff7330; color:#ddff73; }
+.ritm-lock-footer { display:flex; gap:7px; align-items:center; justify-content:center; font-size:11px; color:#9caec4; margin:26px 0 0; }
+.ritm-lock-footer .icn { width:13px; height:13px; }
+.ritm-lock-error { color:#ff9999; font-size:13px; margin-top:16px; }
+.ritm-lock-visual { width:320px; height:320px; position:relative; display:grid; place-items:center; flex:none; }
+.ritm-lock-visual>div { position:absolute; inset:0; border:1px solid #ddff7330; border-radius:50%; transform:rotateX(55deg) rotateZ(-25deg); box-shadow:0 0 50px -30px #ddff73; }
+.ritm-lock-visual>div:nth-child(2) { inset:28px; transform:rotateX(30deg) rotateY(55deg) rotateZ(15deg); }
+.ritm-lock-visual>div:nth-child(3) { inset:56px; transform:rotateY(35deg) rotateZ(-25deg); border-color:#89e3ef38; }
+.ritm-lock-visual>.icn { width:80px; height:80px; color:#ddff73; filter:drop-shadow(0 10px 30px #ddff7344); }
+:root[data-native-kb] .ritm-lock-page { align-items:flex-start; padding-bottom:calc(36px + var(--native-kb,0px)); }
+:root[data-native-kb] .ritm-lock-visual { display:none; }
+.ritm-privacy-cover { position:fixed; inset:0; z-index:1000; }
+.ritm-protection-hero { min-height:180px; }
+.ritm-protection-hero h2 { font-size:27px; }
+.ritm-biometric-option { display:flex; gap:14px; align-items:center; border:1px solid var(--sep-op); background:var(--acc-soft); padding:16px; border-radius:18px; }
+.ritm-biometric-option>.icn { width:32px; height:32px; color:var(--acc); flex:none; }
+.ritm-biometric-option strong { font-size:14px; }
+.ritm-biometric-option p { margin-top:6px; line-height:1.5; }
+.ritm-login-page { max-width:500px; padding:32px; margin:4vh auto; border:1px solid var(--sep-op); border-radius:32px; background:radial-gradient(ellipse at 100% 0%,var(--acc-soft),transparent 60%),var(--surface); box-shadow:0 24px 70px -35px #0005; }
+.ritm-login-title { font-size:42px; font-weight:750; line-height:1.04; letter-spacing:-.07em; margin:12px auto 22px; max-width:350px; }
+@media (max-width:760px) { .ritm-lock-page { flex-direction:column; gap:0; } .ritm-lock-visual { width:148px; height:112px; margin:-8px 0 24px; } .ritm-lock-visual>.icn { width:44px; height:44px; } .ritm-lock-card { padding:24px; max-width:400px; } .ritm-lock-card>.ritm-brand { margin-bottom:30px; } .ritm-lock-card h1 { font-size:35px; } .ritm-login-page { padding:24px; margin-block:2vh; } }
+@media (max-width:600px) { .ritm-program-hero h2 { font-size:29px; max-width:220px; } .ritm-program-hero>.icn { width:72px; height:72px; align-self:center; } #tabbar button { font-size:10px; } }
+@media (prefers-reduced-motion:reduce) { .ritm-loader-orbit>i,.ritm-loader-pulse i,.ritm-button-spinner { animation:none; } .card,.sect-b,.list { transition:none; } }

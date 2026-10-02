@@ -90,13 +90,13 @@ const updateRow = () => [...host.querySelectorAll('.lrow')].find(r => r.textCont
 const checkRow = () => [...host.querySelectorAll('.lrow')].find(r => r.textContent.includes('Check for updates'))
 const webRow = () => [...host.querySelectorAll('.lrow')].find(r => r.textContent.includes('Get the Android app'))
 
-describe('Settings — in-app update check', () => {
-  it('web build: never asks for releases; the Updates section points at the APK instead', async () => {
+describe('RITM — upstream APKs cannot update the personal fork', () => {
+  it('web preview neither checks nor offers an upstream APK as RITM', async () => {
     await mount()
     expect(mocks.checkForUpdate).not.toHaveBeenCalled()
     expect(updateRow()).toBeUndefined()
     expect(checkRow()).toBeUndefined()
-    expect(webRow()).toBeTruthy()
+    expect(webRow()).toBeUndefined()
   })
 
   it('mobile build on iOS: no check, no row, no section', async () => {
@@ -108,37 +108,33 @@ describe('Settings — in-app update check', () => {
     expect(webRow()).toBeUndefined()
   })
 
-  it('mobile build on Android: checks once and shows the row, tapping it asks before downloading', async () => {
+  it('Android cannot check or offer an official openGym update', async () => {
     mocks.MOBILE = true
     mocks.android = true
     await mount()
-    expect(mocks.checkForUpdate).toHaveBeenCalledTimes(1)
-    expect(updateRow()).toBeTruthy()
-    act(() => { updateRow().click() })
-    expect(mocks.confirmSheet).toHaveBeenCalledTimes(1)
-    expect(mocks.confirmSheet.mock.calls[0][0].title).toBe('Update to 9.9.9?')
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled()
+    expect(updateRow()).toBeUndefined()
+    expect(checkRow()).toBeUndefined()
+    expect(mocks.confirmSheet).not.toHaveBeenCalled()
   })
 
-  it('Android without a newer release: a "Check for updates" row stays, and tapping it checks again', async () => {
+  it('Android never polls the upstream endpoint even if it would report no update', async () => {
     mocks.MOBILE = true
     mocks.android = true
     mocks.checkForUpdate.mockResolvedValueOnce({ hasUpdate: false, latestVersion: 'test', apkUrl: null, hashUrl: null })
     await mount()
-    expect(mocks.checkForUpdate).toHaveBeenCalledTimes(1)
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled()
     expect(updateRow()).toBeUndefined()
-    expect(checkRow()).toBeTruthy()
-    await act(async () => { checkRow().click(); await Promise.resolve() })
-    expect(mocks.checkForUpdate).toHaveBeenCalledTimes(2)
-    await act(async () => { await Promise.resolve() })
-    expect(updateRow()).toBeTruthy()   // the second (default) answer had 9.9.9 — the row now offers it
+    expect(checkRow()).toBeUndefined()
   })
 
-  it('Android when gitlab.com is unreachable: stays quiet, keeps the row', async () => {
+  it('Android does not contact an unreachable upstream endpoint', async () => {
     mocks.MOBILE = true
     mocks.android = true
     mocks.checkForUpdate.mockRejectedValueOnce(new Error('offline'))
     await mount()
     expect(updateRow()).toBeUndefined()
-    expect(checkRow()).toBeTruthy()
+    expect(checkRow()).toBeUndefined()
+    expect(mocks.checkForUpdate).not.toHaveBeenCalled()
   })
 })

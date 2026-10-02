@@ -70,7 +70,7 @@ export default function PersonalFoodPicker({ onSelect, onManual, onEdit }) {
       <div className="personal-stack" style={{ marginTop: 12 }}>
         <label>{t('Contact e-mail for Open Food Facts')}<TextField type="email" value={email} onChange={event => setEmail(event.target.value)} /></label>
         <p className="small muted">{t('Sent with searches to identify this app. Your diary stays private.')}</p>
-        <Button disabled={busy || !query.trim()} onClick={() => fetchFoods()}>{busy ? t('Searching…') : t('Search online')}</Button>
+        <Button busy={busy} disabled={!query.trim()} onClick={() => fetchFoods()}>{busy ? t('Searching…') : t('Search online')}</Button>
         <div className="row" style={{ gap: 8 }}>
           <TextField aria-label={t('Barcode')} inputMode="numeric" value={barcode} onChange={event => setBarcode(event.target.value)} placeholder={t('Barcode')} />
           <Button disabled={busy || !barcode} onClick={() => fetchFoods(barcode)}>{t('Find')}</Button>

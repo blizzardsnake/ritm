@@ -83,7 +83,7 @@ export default function Login() {
 
   // Demo build: no backend to sign in against — the only way in is the local guest profile.
   if (DEMO) return (
-    <div className="narrow" style={wrap}>
+    <div className="narrow ritm-login-page" style={wrap}>
       {head}
       <div className="muted" style={{ marginBottom: 30 }}>{t('Live demo — everything stays in this browser.')}</div>
       <Button variant="primary" icon="sparkles" onClick={() => setGuest(true)}>{t('Start the demo')}</Button>
@@ -97,8 +97,9 @@ export default function Login() {
   )
 
   return (
-    <div className="narrow" style={wrap}>
+    <div className="narrow ritm-login-page" style={wrap}>
       {head}
+      <span className="ritm-eyebrow">{t('TRAIN · EAT · EVOLVE')}</span><h1 className="ritm-login-title">{t('Build your rhythm.')}</h1>
       <div className="muted" style={{ marginBottom: 34 }}>{t('Your workouts. Your weights. Your profile.')}</div>
       {webauthnOK() ? <>
         <Button variant="primary" icon="person" onClick={signIn}>{t('Sign in with passkey')}</Button>

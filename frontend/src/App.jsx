@@ -23,6 +23,8 @@ import Toast from './components/Toast.jsx'
 import SyncBanner from './components/SyncBanner.jsx'
 import RestTimer from './components/RestTimer.jsx'
 import TimerFlash from './components/TimerFlash.jsx'
+import RitmLoader from './components/RitmLoader.jsx'
+import AppLockGate from './components/AppLockGate.jsx'
 import { openDeviceLinkRedeem } from './components/Passkeys.jsx'
 import Login from './views/Login.jsx'
 import MobileOnboarding from './views/MobileOnboarding.jsx'
@@ -39,6 +41,7 @@ import Library from './views/Library.jsx'
 import Muscles from './views/Muscles.jsx'
 import StructuralBalance from './views/StructuralBalance.jsx'
 import Settings from './views/Settings.jsx'
+import AppProtection from './views/AppProtection.jsx'
 import Admin from './views/Admin.jsx'
 import CoachChat from './views/CoachChat.jsx'
 import CoachIntake from './views/CoachIntake.jsx'
@@ -59,7 +62,7 @@ function applyPrefs(theme, accent) {
   de.dataset.theme = resolveTheme(theme)
   de.dataset.accent = ACCENTS[accent] ? accent : 'lime'
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f5f3ed' : '#131716'
+  if (meta) meta.content = de.dataset.theme === 'light' ? '#eff2f7' : '#090c11'
 }
 
 function Shell() {
@@ -162,11 +165,7 @@ function Shell() {
 
   const authed = user || isGuest
   if (!ready && !authed) return (
-    <div id="app">
-      <div style={{ paddingTop: '44vh', display: 'flex', justifyContent: 'center', fontSize: 34, color: 'var(--label-3)' }}>
-        <Icon name="dumbbell" />
-      </div>
-    </div>
+    <RitmLoader full />
   )
 
   return (
@@ -192,6 +191,7 @@ function Shell() {
               <Route path="/muscles" element={<Muscles />} />
               <Route path="/structural-balance" element={<StructuralBalance />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/protection" element={<AppProtection />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane
                   rather than on the catch-all. */}
@@ -221,6 +221,9 @@ function Shell() {
 
 export default function App() {
   const boot = useStore(s => s.boot)
+  const appLang = useStore(s => effectiveLang(s.S, s.config))
+  useLang()
+  useEffect(() => { const prefs = useStore.getState().S; setLang(appLang, prefs.enParens?.[baseLang(appLang)] ?? true, prefs.enOnly?.[baseLang(appLang)] === true) }, [appLang])
   useEffect(() => { boot() }, [boot])
   // Android system back — sheet, then page, then press-again-to-exit (see lib/back.js)
   useEffect(() => {
@@ -228,5 +231,5 @@ export default function App() {
     initBackButton().then(fn => { if (gone) fn(); else stop = fn })
     return () => { gone = true; stop?.() }
   }, [])
-  return <HashRouter><Shell /></HashRouter>
+  return <HashRouter><AppLockGate><Shell /></AppLockGate></HashRouter>
 }

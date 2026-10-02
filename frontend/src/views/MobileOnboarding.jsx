@@ -6,6 +6,7 @@ import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { t } from '../lib/i18n.js'
 import Icon from '../components/Icon.jsx'
+import RitmBrand from '../components/RitmBrand.jsx'
 import { Button } from '../components/ui.jsx'
 import { askAddDeviceData } from '../sheets.jsx'
 
@@ -47,14 +48,14 @@ export function ConnectSheet({ close, initialUrl = '', again = false }) {
 export default function MobileOnboarding() {
   const { chooseLocalMode } = useStore()
   const head = <>
-    <div style={{ fontSize: 54, display: 'flex', justifyContent: 'center', color: 'var(--acc)' }}><Icon name="dumbbell" /></div>
-    <h1 style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.028em', margin: '10px 0 4px' }}>openGym</h1>
+    <div className="row" style={{ justifyContent: 'center', marginBottom: 20 }}><RitmBrand /></div>
+    <span className="ritm-eyebrow">{t('TRAIN · EAT · EVOLVE')}</span><h1 className="ritm-login-title">{t('Build your rhythm.')}</h1>
   </>
   const wrap = { display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '78vh', textAlign: 'center' }
   return (
-    <div className="narrow" style={wrap}>
+    <div className="narrow ritm-login-page" style={wrap}>
       {head}
-      <div className="muted" style={{ marginBottom: 34 }}>{t('How do you want to use openGym?')}</div>
+      <div className="muted" style={{ marginBottom: 34 }}>{t('Choose where to keep your RITM history')}</div>
       <Button variant="primary" icon="lock" onClick={() => chooseLocalMode()}>{t('Use on this device')}</Button>
       <div style={{ height: 10 }} />
       <Button icon="rocket" onClick={() => useUI.getState().openSheet(close => <ConnectSheet close={close} />)}>{t('Connect to my server')}</Button>

@@ -50,7 +50,7 @@ export default function AnalysisExport() {
       <div className="row"><label>{t('From date')}<TextField type="date" value={from} onChange={event => { setFrom(event.target.value); setSnapshot(null) }} /></label><label>{t('To date')}<TextField type="date" value={to} onChange={event => { setTo(event.target.value); setSnapshot(null) }} /></label></div>
       <Button variant="ghost" onClick={allHistory}>{t('Select all history')}</Button>
       <p className="sub">{t('Includes four previous weeks of context and the current training plan. Unknown values stay unknown.')}</p>
-      <Button variant="primary" disabled={busy} onClick={generate}>{busy ? t('Preparing report…') : t('Prepare report')}</Button>
+      <Button variant="primary" busy={busy} onClick={generate}>{busy ? t('Preparing report…') : t('Prepare report')}</Button>
     </div>
     {message && <p role="status" className="personal-panel">{message}</p>}
     {snapshot && <div className="personal-panel personal-stack">

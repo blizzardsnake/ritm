@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ritm_unlock_title">Unlock RITM</string>
+    <string name="ritm_unlock_subtitle">Your training, food and progress</string>
+    <string name="ritm_use_password">Use password</string>
+</resources>

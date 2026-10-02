@@ -479,10 +479,10 @@ function require_ui() {
 
 /* ============================ buttons ============================ */
 
-export function Button({ variant = 'plain', size, icon, trailingIcon, children, className = '', ...rest }) {
+export function Button({ variant = 'plain', size, icon, trailingIcon, children, className = '', busy = false, disabled, ...rest }) {
   return (
-    <button className={`btn ${variant}${size ? ' ' + size : ''} ${className}`} {...rest}>
-      {icon && <Icon name={icon} />}
+    <button className={`btn ${variant}${size ? ' ' + size : ''} ${className}`} disabled={disabled || busy} aria-busy={busy || undefined} {...rest}>
+      {busy ? <i className="ritm-button-spinner" aria-hidden="true" /> : icon && <Icon name={icon} />}
       {children && <span>{children}</span>}
       {trailingIcon && <Icon name={trailingIcon} />}
     </button>
