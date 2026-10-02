@@ -4,6 +4,7 @@ import { NUTRIENT_KEYS, summarizeNutritionDay } from './nutrition.js'
 import { PERSONAL_RECORDS } from './state.js'
 import { eventTime, validDate, shiftDate, datesBetween } from './time.js'
 import { selectedHealthDaily } from './health.js'
+import { calculatePersonalProgress, reconcileAwards } from './progress.js'
 export { shiftDate, datesBetween } from './time.js'
 
 export const ANALYSIS_FORMAT = 'opengym-personal-analysis'
@@ -101,6 +102,7 @@ export function buildAnalysis(state, { from, to, now = Date.now(), timezone } = 
       sleep: health.sleep.filter(item => item.date === date && health.config.origins?.includes(item.origin)), observed: !!day && [day.steps, day.activeKcal, day.totalKcal, day.distanceM].some(value => finite(value) != null) }
   })
   const routines = live(state.routines).map(routine => ({ ...pick(routine, ['id', 'name', 'emoji', 'excludeFromProgression', 'policy', 'prog']), ex: (routine.ex || []).map(safeCfg) }))
+  const progress = calculatePersonalProgress(state, { now })
   return stripCredentials({
     format: ANALYSIS_FORMAT, formatVersion: ANALYSIS_VERSION, generatedAt: now,
     profileId: state.personalProfile.id, profile: pick(state.personalProfile, ['id', 'createdAt', 'observationStartedAt']),
@@ -116,13 +118,13 @@ export function buildAnalysis(state, { from, to, now = Date.now(), timezone } = 
         targets: live(state.nutrition?.targets).map(item => ({ ...pick(item, META), ...nutrients(item) })) },
       bodyweight: live(state.bodyweight).filter(inWindow).map(item => pick(item, ['d', 'w', 't'])), health,
       goals: live(state.progressGoals?.goals).map(goal => pick(goal, [...META, 'type', 'name', 'value', 'unit', 'from', 'to'])),
-      awards: (state.progressGoals?.awards || []).map(award => pick(award, [...META, 'kind', 'firstAwardedAt', 'qualified', 'notifiedAt'])),
+      awards: reconcileAwards(state.progressGoals?.awards, progress, { now, historicalImport: true }).map(award => pick(award, [...META, 'kind', 'ruleVersion', 'firstAwardedAt', 'qualified', 'notifiedAt'])),
       weeklyReviews: { proposals: (state.weeklyReviews?.proposals || []).map(safeReview), journal: (state.weeklyReviews?.journal || []).map(safeReview), overrides: live(state.weeklyReviews?.overrides).map(item => ({ ...pick(item, [...META, 'routineId', 'exerciseId', 'field', 'value', 'unit', 'reviewId']), })) },
     },
     plan: { routines, week: structuredClone(state.week || {}), dayPlan: structuredClone(state.dayPlan || {}), weekStart: state.weekStart ?? 1,
       customExercises: (state.customEx || []).map(ex => pick(ex, ['id', 'name', 'bodyPart', 'equipment', 'target', 'secondaryMuscles', 'mode'])),
       nextSessions: live(state.routines).map(routine => ({ routineId: routine.id, entries: buildSessionEntries(state, routine).map(safeEntry) })) },
-    summaries: { workouts: { count: selected.length, volume: selected.reduce((sum, workout) => sum + workoutVolume(workout), 0), durationMs: selected.reduce((sum, workout) => sum + workoutDuration(workout), 0) }, nutrition: dailyFood, health: dailyHealth, progress: null },
+    summaries: { workouts: { count: selected.length, volume: selected.reduce((sum, workout) => sum + workoutVolume(workout), 0), durationMs: selected.reduce((sum, workout) => sum + workoutDuration(workout), 0) }, nutrition: dailyFood, health: dailyHealth, progress },
     quality: { incompleteFoodDays: dailyFood.filter(day => !day.complete).length, missingHealthDays: dailyHealth.filter(day => !day.observed).length,
       lastHealthSyncAt: finite(state.health?.status?.lastSyncAt), offWrist: 'unknown', oldSetTimesUnknown: workouts.some(w => w.entries?.some(e => e.sets?.some(row => row.done && row.completedAt == null))),
       energyRule: 'totalKcal and activeKcal are separate; never added to each other or workout estimates' },

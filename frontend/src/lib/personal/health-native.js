@@ -1,5 +1,6 @@
 import { registerPlugin, Capacitor } from '@capacitor/core'
 import { mergeHealthSnapshot, originKey } from './health.js'
+import { refreshProgressAwards } from './progress.js'
 
 export const PersonalHealth = registerPlugin('PersonalHealth')
 export const healthNativeAvailable = () => Capacitor.getPlatform() === 'android'
@@ -87,9 +88,10 @@ export async function syncPersonalHealth(store, { native = PersonalHealth, days 
   })
 }
 export async function preparePersonalExport(store, { native = PersonalHealth } = {}) {
-  if (!onAndroid(native)) return structuredClone(store.getState().S)
+  if (!onAndroid(native)) { refreshProgressAwards(store); return structuredClone(store.getState().S) }
   return serialized(store, async () => {
     await importUnlocked(store, native)
+    refreshProgressAwards(store)
     await store.getState().flushNativeMirror()
     return structuredClone(store.getState().S)
   })
