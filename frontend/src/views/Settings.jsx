@@ -16,6 +16,7 @@ import { t, LANGS, INSTR_LANGS, EXERCISE_NAME_LANGS, baseLang } from '../lib/i18
 import { effectiveLang } from '../lib/default-lang.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, isAndroid, shareExport, shareExportBlob, syncReminder } from '../lib/mobile.js'
+import { preparePersonalExport } from '../lib/personal/health-native.js'
 import { referencedFiles } from '../lib/media-refs.js'
 import { mediaStore } from '../lib/media-store.js'
 import { syncMedia, fetchToStore } from '../lib/media-sync.js'
@@ -145,7 +146,9 @@ export default function Settings() {
   // Reads the store at the moment of the tap: the sheet that asks before a sign-out offers it too,
   // and the copy it exports is the one that has not reached the server.
   const doExport = async () => {
-    const json = JSON.stringify(useStore.getState().S, null, 2)
+    let json
+    try { json = JSON.stringify(await preparePersonalExport(useStore), null, 2) }
+    catch (error) { toast(t('Export failed: {0}', error.message)); return }
     const name = 'opengym-backup-' + todayISO() + '.json'
     // WKWebView can't download blob URLs — the native build hands the file to the share sheet.
     if (MOBILE) {
@@ -164,7 +167,7 @@ export default function Settings() {
     const st = useStore.getState()
     const signedIn = !!(st.user && st.config?.media)
     let out
-    try { out = await exportBackupZip(st.S, { fetchOne: signedIn ? fetchToStore : null }) }
+    try { out = await exportBackupZip(await preparePersonalExport(useStore), { fetchOne: signedIn ? fetchToStore : null }) }
     catch { toast(t('Something went wrong')); return }
     const name = 'opengym-backup-' + todayISO() + '.zip'
     if (out.missing) toast(t(out.missing === 1 ? '{0} file could not be included' : '{0} files could not be included', out.missing))
@@ -510,6 +513,9 @@ export default function Settings() {
 
     <Section title={t('Privacy')}>
       <Row icon="fingerprint" iconTint="var(--acc)" title={t('App protection')} subtitle={t('Optional password and fingerprint unlock')} accessory="chevron" onClick={() => nav('/protection')} />
+    </Section>
+    <Section title={t('Activity & recovery')}>
+      <Row icon="heart" iconTint="var(--acc)" title={t('Watch & recovery')} subtitle={t('Health Connect sources and read permissions')} accessory="chevron" onClick={() => nav('/health')} />
     </Section>
     {/* ---------- appearance ---------- */}
     <Section title={t('Appearance')} footer={DEMO || MOBILE ? undefined : t('synced with your profile')}>

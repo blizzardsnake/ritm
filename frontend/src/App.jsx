@@ -42,6 +42,8 @@ import Muscles from './views/Muscles.jsx'
 import StructuralBalance from './views/StructuralBalance.jsx'
 import Settings from './views/Settings.jsx'
 import AppProtection from './views/AppProtection.jsx'
+import PersonalHealth from './views/PersonalHealth.jsx'
+import { useHealthSync } from './lib/personal/use-health-sync.js'
 import Admin from './views/Admin.jsx'
 import CoachChat from './views/CoachChat.jsx'
 import CoachIntake from './views/CoachIntake.jsx'
@@ -70,6 +72,7 @@ function Shell() {
   const loc = useLocation()
   const navType = useNavigationType()
   const { S, user, ready } = useStore()
+  useHealthSync(ready)
   // iOS: whether timer sounds get past the ring/silent switch (Settings → Sounds). Page-level,
   // so it is applied here on load and on change rather than at each beep.
   useEffect(() => { setPlayOnSilent(!!S.soundOnSilent) }, [S.soundOnSilent])
@@ -179,6 +182,7 @@ function Shell() {
               <Route path="/home" element={<Home />} />
               <Route path="/nutrition" element={<Nutrition />} />
               <Route path="/analysis" element={<AnalysisExport />} />
+              <Route path="/health" element={<PersonalHealth />} />
               {/* Gym check-in — switched off in Settings, the route falls through to the
                   catch-all redirect below. */}
               {S.checkIn !== false && <Route path="/checkin" element={<CheckIn />} />}

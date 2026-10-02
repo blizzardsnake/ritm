@@ -39,6 +39,7 @@ describe('combined analysis snapshot', () => {
     const state = fixture()
     state.nutrition.meals = [{ id: 'm', date: '2026-10-02', at: now, items: [{ grams: 50, food: { name: 'Еда', apiKey: 'secret-food' }, nutrients: { kcal: 75, protein: null, fat: 0, carbs: 10 } }] }]
     state.health.daily = [{ id: 'd', date: '2026-10-02', steps: 0, activeKcal: 400, totalKcal: 2400, distanceM: null, origins: ['mi'], token: 'secret-health' }]
+    state.health.config.origins = ['mi']
     const report = buildAnalysis(state, { from: '2026-10-01', to: '2026-10-02', now })
     expect(report.summaries.nutrition[0]).toMatchObject({ date: '2026-10-01', totals: { kcal: null }, complete: false })
     expect(report.summaries.nutrition[1]).toMatchObject({ totals: { kcal: 75, protein: null, fat: 0 }, missing: { protein: 1 }, complete: false })
@@ -52,12 +53,40 @@ describe('combined analysis snapshot', () => {
     expect(md).toContain('неполный')
     expect(md).not.toContain('2800')
   })
+  it('uses the selected origin for summaries while retaining other sources in the auditable history', () => {
+    const state = fixture()
+    state.health.config.origins = ['mi']
+    state.health.daily = [
+      { id: 'phone-day', date: '2026-10-02', originKey: 'phone', origins: ['phone'], steps: 9000 },
+      { id: 'mi-day', date: '2026-10-02', originKey: 'mi', origins: ['mi'], steps: 1234 },
+    ]
+    state.health.sleep = [
+      { id: 'phone-sleep', date: '2026-10-02', origin: 'phone', durationMinutes: 900 },
+      { id: 'mi-sleep', date: '2026-10-02', origin: 'mi', durationMinutes: 430, asleepMinutes: null },
+    ]
+    const report = buildAnalysis(state, { from: '2026-10-02', to: '2026-10-02', now })
+    expect(report.summaries.health[0].steps).toBe(1234)
+    expect(report.summaries.health[0].sleep.map(record => record.id)).toEqual(['mi-sleep'])
+    expect(report.history.health.daily).toHaveLength(2)
+    expect(report.history.health.sleep).toHaveLength(2)
+    expect(report.history.health.daily[1].originKey).toBe('mi')
+  })
   it('records local midnight and actual DST offsets, rejects malformed ranges', () => {
     expect(eventTime(Date.parse('2026-10-01T21:30:00Z'), { timezone: 'Europe/Moscow' })).toMatchObject({ date: '2026-10-02', offsetMinutes: 180 })
     expect(eventTime(Date.parse('2026-03-08T06:30:00Z'), { timezone: 'America/New_York' }).offsetMinutes).toBe(-300)
     expect(eventTime(Date.parse('2026-03-08T07:30:00Z'), { timezone: 'America/New_York' }).offsetMinutes).toBe(-240)
     expect(() => buildAnalysis(fixture(), { from: '2026-02-30', to: '2026-10-02', now })).toThrow()
     expect(() => buildAnalysis(fixture(), { from: '2026-10-03', to: '2026-10-02', now })).toThrow()
+  })
+  it('exports source measurements and aggregation boundaries without carrying nested secrets', () => {
+    const state = fixture(); state.health.config.origins = ['mi']
+    state.health.daily = [{ id: 'day', date: '2026-10-02', origins: ['mi'], steps: 10,
+      sourceRecords: { steps: [{ sourceId: 'id1', origin: 'mi', start: 1, end: 2, value: 10, unit: 'count', token: 'secret-watch' }] },
+      intervals: { steps: { start: 1, end: 2, origins: ['mi'], password: 'secret-interval' } } }]
+    const report = buildAnalysis(state, { now })
+    expect(report.history.health.daily[0].sourceRecords.steps[0]).toMatchObject({ sourceId: 'id1', value: 10, unit: 'count' })
+    expect(report.history.health.daily[0].intervals.steps).toEqual({ start: 1, end: 2, origins: ['mi'] })
+    expect(JSON.stringify(report)).not.toContain('secret-')
   })
   it('uses original sync/edit stamps and strips nested credentials from schedule objects', () => {
     const state = fixture()

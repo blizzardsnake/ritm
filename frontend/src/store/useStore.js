@@ -370,13 +370,17 @@ export const useStore = create((set, get) => {
   // so a mirror write that failed, or a kill between the two writes, leaves a file that is never
   // taken. One write at a time, each of the copy in the store when its turn comes: a slow write
   // can never land after a later one.
-  const saveMirror = () => (mirrorQ = mirrorQ.then(async () => {
+  const saveMirror = (strict = false) => {
+    const operation = mirrorQ.then(async () => {
     const S = get().S
     let owner = null
     try { owner = localStorage.getItem('gym_owner') } catch { /* unknown — the file is then nobody's */ }
-    await nativeSave(S)
-    await writeJsonFile(MIRROR_OWNER_FILE, { owner, ts: S._ts || 0 })
-  }).catch(() => {}))
+    if (strict) await nativeSave(S, { strict: true }); else await nativeSave(S)
+    await writeJsonFile(MIRROR_OWNER_FILE, { owner, ts: S._ts || 0 }, strict ? { strict: true } : undefined)
+    })
+    mirrorQ = operation.catch(() => {})
+    return strict ? operation : mirrorQ
+  }
   // Mobile build: mirror the state into a file in the app's data directory (survives WebView
   // storage eviction) and keep the native reminder schedule in step with the weekly plan.
   // `now` skips the wait and returns the write, for a copy that replaced the last one wholesale.
@@ -1083,9 +1087,20 @@ export const useStore = create((set, get) => {
     // Fires after the moments where losing local data would actually hurt — a workout just
     // logged, a routine just edited — not on every keystroke. No-op off mobile or with the
     // setting off; the private file mirror (nativePersist, above) already covers every change.
-    autoBackupNow() {
-      const S = get().S
-      if (MOBILE && S.autoBackup) writeAutoBackup(S)
+    async autoBackupNow() {
+      if (!MOBILE || !get().S.autoBackup) return
+      try {
+        const { preparePersonalExport } = await import('../lib/personal/health-native.js')
+        await writeAutoBackup(await preparePersonalExport(useStore))
+      } catch (error) {
+        // Keep existing backups when the native import cannot be durably saved.
+        import('./useUI.js').then(({ useUI }) => useUI.getState().toast(t('Backup postponed: {0}', error.message))).catch(() => {})
+      }
+    },
+    async flushNativeMirror() {
+      if (!MOBILE) return
+      clearTimeout(saveTm); saveTm = null
+      await saveMirror(true)
     },
 
     isGuest: () => localStorage.getItem('gym_guest') === '1',

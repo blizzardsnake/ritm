@@ -8,4 +8,5 @@
 <full-backup-content>
     <exclude domain="file" path="opengym-media/" />
     <exclude domain="sharedpref" path="ritm_lock.xml" />
+    <exclude domain="sharedpref" path="ritm_health.xml" />
 </full-backup-content>

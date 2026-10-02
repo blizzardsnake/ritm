@@ -14,3 +14,9 @@ export function validDate(date) {
   return typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
     && Number.isFinite(Date.parse(`${date}T00:00:00Z`)) && new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date
 }
+export const shiftDate = (date, days) => new Date(Date.parse(`${date}T12:00:00Z`) + days * 86400000).toISOString().slice(0, 10)
+export function datesBetween(from, to) {
+  const result = []
+  for (let date = from; date <= to; date = shiftDate(date, 1)) result.push(date)
+  return result
+}

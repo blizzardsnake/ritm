@@ -2,7 +2,9 @@ import { workoutDay, workoutDuration, workoutVolume } from '../history.js'
 import { buildSessionEntries } from '../session-start.js'
 import { NUTRIENT_KEYS, summarizeNutritionDay } from './nutrition.js'
 import { PERSONAL_RECORDS } from './state.js'
-import { eventTime, validDate } from './time.js'
+import { eventTime, validDate, shiftDate, datesBetween } from './time.js'
+import { selectedHealthDaily } from './health.js'
+export { shiftDate, datesBetween } from './time.js'
 
 export const ANALYSIS_FORMAT = 'opengym-personal-analysis'
 export const ANALYSIS_VERSION = 1
@@ -54,11 +56,12 @@ function safeItem(item, depth = 0) {
   return { ...pick(item, ['id', 'foodId', 'grams']), food: safeFood(item.food, depth), nutrients: nutrients(item.nutrients) }
 }
 function safeHealth(health, inWindow) {
+  const sourceRecord = item => ({ ...pick(item, ['sourceId', 'origin', 'start', 'end', 'startOffsetMinutes', 'endOffsetMinutes', 'modifiedAt', 'recordingMethod', 'value', 'unit']), device: pick(item.device, ['type', 'manufacturer', 'model']) })
   return {
-    daily: live(health?.daily).filter(inWindow).map(item => pick(item, [...META, ...CLOCK, 'steps', 'activeKcal', 'totalKcal', 'distanceM', 'origins', 'metricStatus', 'permissions', 'ingestedAt', 'generation'])),
-    sleep: live(health?.sleep).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'title', 'ingestedAt', 'durationMinutes', 'asleepMinutes', 'hasStages']), stages: (item.stages || []).map(stage => pick(stage, ['start', 'end', 'stage'])) })),
-    heartRate: live(health?.heartRate).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'ingestedAt']), samples: (item.samples || []).map(sample => pick(sample, ['at', 'bpm'])) })),
-    activities: live(health?.activities).filter(inWindow).map(item => pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'ingestedAt', 'title', 'exerciseType', 'linkedWorkoutId'])),
+    daily: live(health?.daily).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'steps', 'activeKcal', 'totalKcal', 'distanceM', 'originKey', 'origins', 'metricStatus', 'permissions', 'ingestedAt', 'generation']), sourceRecords: Object.fromEntries(Object.entries(item.sourceRecords || {}).map(([metric, records]) => [metric, records.map(sourceRecord)])), intervals: Object.fromEntries(Object.entries(item.intervals || {}).map(([metric, range]) => [metric, range ? pick(range, ['start', 'end', 'origins']) : null])) })),
+    sleep: live(health?.sleep).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'title', 'ingestedAt', 'durationMinutes', 'asleepMinutes', 'knownAsleepMinutes', 'stageCoverage', 'hasStages', 'recordingMethod']), device: pick(item.device, ['type', 'manufacturer', 'model']), stages: (item.stages || []).map(stage => pick(stage, ['start', 'end', 'stage'])) })),
+    heartRate: live(health?.heartRate).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'ingestedAt', 'recordingMethod']), device: pick(item.device, ['type', 'manufacturer', 'model']), samples: (item.samples || []).map(sample => pick(sample, ['at', 'bpm'])) })),
+    activities: live(health?.activities).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'ingestedAt', 'title', 'exerciseType', 'linkedWorkoutId', 'recordingMethod']), device: pick(item.device, ['type', 'manufacturer', 'model']) })),
     config: pick(health?.config, ['origins', 'background', 'updatedAt']),
     status: pick(health?.status, ['updatedAt', 'lastSyncAt', 'availability', 'permissions', 'metricStatus', 'origins', 'error', 'background', 'generation']),
   }
@@ -77,12 +80,6 @@ export function stateWatermark(state) {
     for (const record of state[section]?.[field] || []) watermark = Math.max(watermark, finite(record.updatedAt) ?? 0, finite(record.deletedAt) ?? 0)
   return watermark
 }
-export const shiftDate = (date, days) => new Date(Date.parse(`${date}T12:00:00Z`) + days * 86400000).toISOString().slice(0, 10)
-export function datesBetween(from, to) {
-  const result = []
-  for (let date = from; date <= to; date = shiftDate(date, 1)) result.push(date)
-  return result
-}
 
 export function buildAnalysis(state, { from, to, now = Date.now(), timezone } = {}) {
   const clock = eventTime(now, { timezone: timezone ?? state.personalProfile?.timezone ?? state.timezone })
@@ -98,9 +95,10 @@ export function buildAnalysis(state, { from, to, now = Date.now(), timezone } = 
   const days = datesBetween(from, to)
   const dailyFood = days.map(date => ({ date, ...summarizeNutritionDay(state.nutrition, date) }))
   const dailyHealth = days.map(date => {
-    const day = health.daily.find(item => item.date === date)
+    const day = selectedHealthDaily({ ...health, daily: health.daily }).find(item => item.date === date)
     return { date, steps: finite(day?.steps), activeKcal: finite(day?.activeKcal), totalKcal: finite(day?.totalKcal), distanceM: finite(day?.distanceM), origins: day?.origins || [],
-      sleep: health.sleep.filter(item => item.date === date), observed: !!day }
+      metricStatus: day?.metricStatus || {}, ingestedAt: day?.ingestedAt ?? null,
+      sleep: health.sleep.filter(item => item.date === date && health.config.origins?.includes(item.origin)), observed: !!day && [day.steps, day.activeKcal, day.totalKcal, day.distanceM].some(value => finite(value) != null) }
   })
   const routines = live(state.routines).map(routine => ({ ...pick(routine, ['id', 'name', 'emoji', 'excludeFromProgression', 'policy', 'prog']), ex: (routine.ex || []).map(safeCfg) }))
   return stripCredentials({

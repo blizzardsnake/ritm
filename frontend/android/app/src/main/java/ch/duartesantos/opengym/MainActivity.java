@@ -24,6 +24,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PrintPlugin.class);
         registerPlugin(RestAlertPlugin.class);
         registerPlugin(RitmLockPlugin.class);
+        registerPlugin(PersonalHealthPlugin.class);
         super.onCreate(savedInstanceState);
         passSystemBarsToPage();
     }

@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
     namespace "ch.duartesantos.opengym"
@@ -49,6 +50,10 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation "androidx.biometric:biometric:1.1.0"
+    implementation "androidx.health.connect:connect-client:1.1.0"
+    implementation "androidx.work:work-runtime-ktx:2.10.1"
+    // ML Kit's empty listenablefuture shim hides the interface from the compile classpath.
+    implementation "com.google.guava:guava:33.3.1-android"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
@@ -58,6 +63,7 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+kotlin { jvmToolchain(21) }
 
 try {
     def servicesJSON = file('google-services.json')

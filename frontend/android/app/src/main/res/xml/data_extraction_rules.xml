@@ -7,6 +7,7 @@
     <cloud-backup>
         <exclude domain="file" path="opengym-media/" />
         <exclude domain="sharedpref" path="ritm_lock.xml" />
+        <exclude domain="sharedpref" path="ritm_health.xml" />
     </cloud-backup>
-    <device-transfer><exclude domain="sharedpref" path="ritm_lock.xml" /></device-transfer>
+    <device-transfer><exclude domain="sharedpref" path="ritm_lock.xml" /><exclude domain="sharedpref" path="ritm_health.xml" /></device-transfer>
 </data-extraction-rules>

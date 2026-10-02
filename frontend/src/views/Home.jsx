@@ -12,6 +12,7 @@ import { Button } from '../components/ui.jsx'
 import { tappable } from '../lib/use-sheet-keyboard.js'
 import { summarizeNutritionDay } from '../lib/personal/nutrition.js'
 import { mealCountText, nutrientDisplay } from '../lib/personal/ui-format.js'
+import HealthDayCards from '../components/HealthDayCards.jsx'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -119,6 +120,11 @@ export default function Home() {
         <div className="ritm-week-bars" aria-hidden="true">{Array.from({ length: 7 }, (_, index) => { const day = new Date(today); day.setDate(day.getDate() - weekDayOffset(day.getDay(), ws) + index); const done = doneDays.has(isoOf(day)); return <i key={index} className={done ? 'done' : ''} /> })}</div>
         <span className="ritm-tile-link">{t('View progress')}<Icon name="arrowUp" /></span>
       </div>
+    </div>
+
+    <div className="card ritm-home-health">
+      <div className="ritm-section-heading"><div><span className="ritm-eyebrow">{t('Recovery signals')}</span><h2>{t('Watch & recovery')}</h2></div><Button size="sm" variant="ghost" trailingIcon="chevronRight" onClick={() => nav('/health')}>{t(S.health?.config?.origins?.length ? 'Details' : 'Connect watch data')}</Button></div>
+      {S.health?.config?.origins?.length ? <HealthDayCards health={S.health} date={todayISO()} compact /> : <p className="small muted">{t('Steps, sleep and energy from the sources you choose. Missing values stay unknown.')}</p>}
     </div>
 
     <div className="card ritm-home-calendar">

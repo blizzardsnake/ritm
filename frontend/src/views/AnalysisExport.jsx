@@ -6,6 +6,7 @@ import { todayISO } from '../lib/format.js'
 import { MOBILE, shareExport } from '../lib/mobile.js'
 import { buildAnalysis, renderAnalysisMarkdown, shiftDate } from '../lib/personal/report.js'
 import { createExchangeSnapshot, writePrivateAnalysis } from '../lib/personal/exchange.js'
+import { preparePersonalExport } from '../lib/personal/health-native.js'
 import { Button, TextField } from '../components/ui.jsx'
 import '../personal.css'
 
@@ -19,7 +20,7 @@ export default function AnalysisExport() {
   async function generate() {
     setBusy(true); setMessage('')
     try {
-      const report = buildAnalysis(structuredClone(useStore.getState().S), { from, to })
+      const report = buildAnalysis(await preparePersonalExport(useStore), { from, to })
       const next = await createExchangeSnapshot(report)
       if (MOBILE) await writePrivateAnalysis(next)
       setSnapshot(next)

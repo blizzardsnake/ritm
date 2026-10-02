@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => {
   vi.stubEnv('VITE_MOBILE', '1')
-  return { files: new Map() }
+  return { files: new Map(), queue: [] }
 })
 vi.mock('@capacitor/filesystem', () => ({
   Directory: { Data: 'DATA', Documents: 'DOCUMENTS', Cache: 'CACHE' },
@@ -21,17 +21,22 @@ vi.mock('@capacitor/filesystem', () => ({
     writeFile: async ({ path, directory, data }) => { h.files.set(directory + '/' + path, data); return { uri: 'file://' + path } },
     readdir: async () => ({ files: [] }),
     deleteFile: async () => {},
+    rename: async ({ from, to, directory, toDirectory }) => { const source = directory + '/' + from; h.files.set((toDirectory || directory) + '/' + to, h.files.get(source)); h.files.delete(source) },
   },
 }))
 vi.mock('@capacitor/local-notifications', () => ({
   LocalNotifications: { cancel: async () => {}, checkPermissions: async () => ({ display: 'granted' }), requestPermissions: async () => ({ display: 'granted' }), schedule: async () => {} },
 }))
 vi.mock('@capacitor/app', () => ({ App: { addListener: () => ({ remove() {} }) } }))
-vi.mock('@capacitor/core', () => ({ Capacitor: { getPlatform: () => 'android', isNativePlatform: () => true }, registerPlugin: () => ({}) }))
+vi.mock('@capacitor/core', () => ({ Capacitor: { getPlatform: () => 'android', isNativePlatform: () => true }, registerPlugin: name => name === 'PersonalHealth' ? {
+  readMailbox: async () => structuredClone(h.queue[0] || {}),
+  ackMailbox: async ({ generation }) => { if (h.queue[0]?.generation === generation) h.queue.shift(); return { acknowledged: true } },
+} : {} }))
 vi.mock('./useUI.js', () => ({ useUI: { getState: () => ({ toast: () => {} }) } }))
 
 import { DEF, useStore } from './useStore.js'
 import { addWorkoutMedia, removeWorkoutMedia } from '../lib/workout-media.js'
+import { migratePersonalState } from '../lib/personal/state.js'
 
 const clone = v => JSON.parse(JSON.stringify(v))
 const sleep = ms => new Promise(r => setTimeout(r, ms))
@@ -39,9 +44,19 @@ const W = { id: 'w1', d: '2026-09-27', start: 1, end: 2, entries: [] }
 const ref = c => ({ kind: 'image', hash: c.repeat(64), mime: 'image/webp', size: 3, width: 8, height: 6, at: 1 })
 const backups = () => [...h.files].filter(([k]) => k.startsWith('DOCUMENTS/')).map(([, v]) => JSON.parse(v))
 
-afterEach(() => { h.files.clear(); useStore.setState({ S: clone(DEF), user: null, ready: false }) })
+afterEach(() => { h.files.clear(); h.queue.length = 0; useStore.setState({ S: clone(DEF), user: null, ready: false }) })
 
 describe('auto-backup and a workout\'s photos and videos', () => {
+  it('includes durably imported pending watch data before writing an automatic backup', async () => {
+    const S = migratePersonalState(clone(DEF), { profileId: 'owner' }); S.autoBackup = true; S.health.config.origins = ['mi']
+    useStore.setState({ S, user: null, ready: true })
+    h.queue.push({ schemaVersion: 1, generation: 'pending-1', profileId: S.personalProfile.id, generatedAt: 100,
+      timezone: 'UTC', origins: ['mi'], window: { from: '2026-10-02', to: '2026-10-02' }, permissions: { steps: true }, completedMetrics: ['steps'],
+      metricStatus: { steps: 'available' }, daily: [{ date: '2026-10-02', steps: 3500 }] })
+    await useStore.getState().autoBackupNow()
+    expect(backups()[0].health.daily[0].steps).toBe(3500)
+    expect(h.queue).toHaveLength(0)
+  })
   it('a photo added after finishing is in the day\'s backup, one write for two picked together', async () => {
     useStore.setState({ S: { ...clone(DEF), autoBackup: true, workouts: [clone(W)] }, ready: true })
     useStore.getState().update(s => { addWorkoutMedia(s, W, ref('a')) })
