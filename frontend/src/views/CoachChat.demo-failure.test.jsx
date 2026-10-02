@@ -60,7 +60,7 @@ function installDom() {
 const chip = re => [...container.querySelectorAll('.qchip')].find(b => re.test(b.textContent || ''))
 async function click(el) {
   expect(el).toBeTruthy()
-  await act(async () => { el.dispatchEvent(new dom.Event('click', { bubbles: true })); await flush() })
+  await act(async () => { el.dispatchEvent(new dom.Event('click', { bubbles: true })); await vi.dynamicImportSettled(); await flush() })
 }
 // Microtasks only: the dynamic import of coach-demo.js and the status refresh both settle here.
 const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve() }

@@ -1,5 +1,7 @@
+import personal from '../lib/personal/en.js'
 // German UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...personal,
   // --- generic ---
   'Confirm': 'Bestätigen',
   'Cancel': 'Abbrechen',

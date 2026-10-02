@@ -86,7 +86,7 @@ export function addDeviceDataMessage(workouts, weighIns) {
 export function askAddDeviceData(extras) {
   return new Promise(resolve => confirmSheet({
     title: t('Add this device\'s workouts to your profile?'),
-    message: addDeviceDataMessage(extras.workouts, extras.bodyweight),
+    message: extras.personal ? `${addDeviceDataMessage(extras.workouts, extras.bodyweight)}\n\n${t('{0} food, health and progress records are also stored on this device.', extras.personal)}` : addDeviceDataMessage(extras.workouts, extras.bodyweight),
     confirmText: t('Add them'), cancelText: t('Keep profile as is'),
     onConfirm: () => resolve(true), onCancel: () => resolve(false), locked: true
   }))

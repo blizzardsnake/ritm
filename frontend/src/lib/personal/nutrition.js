@@ -36,7 +36,7 @@ export function portionNutrients(per100g, grams) {
 export function recipeNutrients(ingredients, finalGrams) {
   if (!Array.isArray(ingredients) || !ingredients.length) throw new Error('Добавьте ингредиенты')
   const finalMass = parseAmount(finalGrams)
-  const portions = ingredients.map(item => portionNutrients(item.nutrients ?? item.food?.nutrients, item.grams))
+  const portions = ingredients.map(item => portionNutrients(item.food?.nutrients ?? item.nutrients, item.grams))
   return Object.fromEntries(NUTRIENT_KEYS.map(key => [key,
     portions.some(portion => portion[key] === null) ? null
       : finiteResult(portions.reduce((sum, portion) => finiteResult(sum + portion[key]), 0) * (100 / finalMass)),

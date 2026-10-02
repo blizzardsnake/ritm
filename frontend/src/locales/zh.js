@@ -1,5 +1,7 @@
+import personal from '../lib/personal/en.js'
 // Simplified Chinese UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...personal,
   'Confirm': '确认',
   'Cancel': '取消',
   'Press back again to exit': '再按一次返回退出',

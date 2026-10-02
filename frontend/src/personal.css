@@ -1,0 +1,17 @@
+.personal-stack { display: flex; flex-direction: column; gap: 12px; }
+.personal-stack .hdr > div { flex: 1; min-width: 0; }
+.personal-stack .hdr > button, .personal-stack .row > button { width: auto; flex: 0 0 auto; }
+.personal-stack .row > .field { width: auto; min-width: 0; flex: 1; }
+.personal-stack label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.personal-stack label.row { flex-direction: row; align-items: center; }
+.personal-stack h2, .personal-stack h3, .personal-stack p { margin: 0; }
+.personal-nutrients { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.personal-nutrients > div { display: flex; flex-direction: column; gap: 4px; }
+.personal-number { font-size: 23px; font-variant-numeric: tabular-nums; }
+.personal-error { color: var(--orange); }
+.personal-food-list { max-height: 340px; overflow-y: auto; overscroll-behavior: contain; }
+.personal-food-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--sep); }
+.personal-food-select { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; border: 0; background: transparent; color: inherit; text-align: start; padding: 5px; cursor: pointer; }
+.personal-food-select:hover { background: color-mix(in srgb, var(--acc) 8%, transparent); border-radius: 10px; }
+.personal-stack details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+@media (max-width: 380px) { .personal-nutrients { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -1,5 +1,7 @@
+import personal from '../lib/personal/en.js'
 // Arabic UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...personal,
   'Confirm': 'تأكيد',
   'Cancel': 'إلغاء',
   'Press back again to exit': 'اضغط زر الرجوع مرة أخرى للخروج',

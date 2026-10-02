@@ -1,9 +1,11 @@
+import personal from '../lib/personal/en.js'
 // Brazilian Portuguese overrides. Shared, region-neutral strings inherit from pt-PT.
 // Tests fingerprint every deliberately inherited entry so upstream changes require review.
 // Some byte-identical overrides intentionally pin wording that must not drift with pt-PT.
 import pt from './pt.js'
 
 export const PT_BR_OVERRIDES = {
+  ...Object.fromEntries(Object.entries(personal).filter(([key]) => pt[key] === key)),
   '{0} workouts and {1} weigh-ins were logged on this device while signed out. Add them to your profile, or keep the profile exactly as it is on the server.': '{0} treinos e {1} pesagens foram registrados neste dispositivo sem login. Adicione-os ao seu perfil ou mantenha o perfil exatamente como está no servidor.',
   '{0} workout and {1} weigh-in were logged on this device while signed out. Add them to your profile, or keep the profile exactly as it is on the server.': '{0} treino e {1} pesagem foram registrados neste dispositivo sem login. Adicione-os ao seu perfil ou mantenha o perfil exatamente como está no servidor.',
   '{0} workout and {1} weigh-ins were logged on this device while signed out. Add them to your profile, or keep the profile exactly as it is on the server.': '{0} treino e {1} pesagens foram registrados neste dispositivo sem login. Adicione-os ao seu perfil ou mantenha o perfil exatamente como está no servidor.',
@@ -1010,4 +1012,5 @@ export const PT_BR_OVERRIDES = {
   'Enter how long it took — at least 1 minute.': 'Informe quanto tempo levou — pelo menos 1 minuto.',
 }
 
-export default { ...pt, ...PT_BR_OVERRIDES }
+export default {
+  ...personal, ...pt, ...PT_BR_OVERRIDES }

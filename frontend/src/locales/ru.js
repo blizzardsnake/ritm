@@ -1,5 +1,7 @@
 // Russian UI strings. Keys are the English source strings (see lib/i18n.js).
+import personal from '../lib/personal/ru.js'
 export default {
+  ...personal,
   'Confirm': 'Подтвердить',
   'Cancel': 'Отмена',
   'Press back again to exit': 'Нажмите «Назад» ещё раз, чтобы выйти',

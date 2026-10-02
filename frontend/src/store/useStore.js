@@ -22,6 +22,7 @@ import { RTL_LANGS } from '../lib/i18n-core.js'
 import { DEFAULT_TEMPLATE_ID } from '../lib/structuralBalanceTemplates.js'
 
 import { WC_DEFAULT } from '../lib/workout-controls.js'
+import { migratePersonalState, personalHasData, PERSONAL_RECORDS } from '../lib/personal/state.js'
 
 const KEY = 'gym_state_v1'
 // Where the saved copy stands with the server: the revision it descends from, and its own `_ts`
@@ -200,7 +201,7 @@ export function freshState() {
   const s = clone(DEF)
   s.lang = detectedLang()
   s.langAuto = true
-  return s
+  return migratePersonalState(s)
 }
 
 function loadState() {
@@ -210,7 +211,7 @@ function loadState() {
       const saved = JSON.parse(raw)
       const s = Object.assign(clone(DEF), saved)
       if (!saved.lang) s.lang = detectedLang()
-      return s
+      return migratePersonalState(s)
     }
   } catch (e) { /* ignore */ }
   return freshState()
@@ -220,14 +221,14 @@ function loadState() {
 // weigh-ins and custom exercises. A custom exercise is all a new guest may have made — with its
 // photo or video, which the server counts as unreferenced until the state that names it lands —
 // so a profile created from such a copy takes it at once, like one holding a workout.
-const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length || (st.customEx || []).length)
+const hasData = st => !!((st.workouts || []).length || (st.routines || []).length || (st.bodyweight || []).length || (st.customEx || []).length || personalHasData(st))
 
 // Decide whether a pulled account state may replace the local saved state. A local active workout
 // is deliberately carried forward: the server stores completed/saved state, while the in-progress
 // session belongs to the device that is currently running it.
 export function restoredStateFor(local, remote, dirty = false) {
   if (!remote || (hasData(local) && (dirty || (remote._ts || 0) < (local._ts || 0)))) return null
-  const next = Object.assign(clone(DEF), remote)
+  const next = migratePersonalState(Object.assign(clone(DEF), remote), { profileId: local.personalProfile?.id })
   if (local.active) next.active = local.active
   return next
 }
@@ -396,6 +397,7 @@ export const useStore = create((set, get) => {
   // it, and with this clock behind, the change looked older than its own base — unchanged — and
   // a pull replaced it with the server's copy.
   const persist = (S, push = true, stamp = true) => {
+    Object.assign(S, migratePersonalState(S, { profileId: get().S.personalProfile?.id }))
     const { base, owed } = metaOf()   // the copy being replaced; the new one stands where it stood
     if (stamp) S._ts = Math.max(Date.now(), (base?.ts || 0) + 1)
     registerCustom(S.customEx)
@@ -777,7 +779,7 @@ export const useStore = create((set, get) => {
     reached()
     let asked = false
     const askAbout = async extras => {
-      if (!(extras.workouts || extras.bodyweight || extras.customEx) || typeof ask !== 'function') return false
+      if (!(extras.workouts || extras.bodyweight || extras.customEx || extras.personal) || typeof ask !== 'function') return false
       asked = true
       return !!(await ask(extras))
     }
@@ -879,6 +881,20 @@ export const useStore = create((set, get) => {
       later[f] = xs.filter(x => !had.has(entryKey(f, x)))
       if (later[f].length) any = true
     }
+    // Food and imported measurements recorded while the sign-in question is open
+    // belong to the later draft too, rather than disappearing with the old guest.
+    for (const [section, fields] of Object.entries(PERSONAL_RECORDS)) {
+      if (!S[section]) continue
+      before[section] = clone(S[section])
+      later[section] = { schemaVersion: S[section].schemaVersion }
+      for (const field of fields) {
+        const had = new Set(pre?.[`personal:${section}:${field}`] || [])
+        const records = S[section][field] || []
+        before[section][field] = records.filter(record => had.has(record.id))
+        later[section][field] = records.filter(record => !had.has(record.id))
+        if (later[section][field].length) any = true
+      }
+    }
     if (!any) return { before, later: null }
     const used = new Set(later.workouts.flatMap(w => (Array.isArray(w?.entries) ? w.entries : []).map(e => e?.id)))
     later.customEx = [...later.customEx, ...before.customEx.filter(c => used.has(c.id))]
@@ -886,7 +902,8 @@ export const useStore = create((set, get) => {
   }
   const preOf = S => {
     const ids = resetIdsOf(S)
-    return Object.fromEntries(ADOPT_FIELDS.map(f => [f, ids[f] || []]))
+    return Object.fromEntries([...ADOPT_FIELDS.map(f => [f, ids[f] || []]),
+      ...Object.entries(ids).filter(([key]) => key.startsWith('personal:'))])
   }
 
   // The file mirror is the durable copy: WebView storage can be evicted while the files
@@ -962,6 +979,12 @@ export const useStore = create((set, get) => {
         backupTm = setTimeout(() => { backupTm = null; get().autoBackupNow() }, AUTO_BACKUP_SOON_MS)
       }
     },
+    updatePersonal(mutator, push = true) {
+      get().update(S => {
+        Object.assign(S, migratePersonalState(S, { profileId: get().S.personalProfile?.id }))
+        mutator(S)
+      }, push)
+    },
     // An edit of a saved workout (lib/session-edit.js) is saved or dropped like any other change:
     // the store's own sync takes it to the server, and a conflict on the way is settled by
     // mergeStates like one between two devices. A save that cannot happen throws before anything
@@ -1005,6 +1028,7 @@ export const useStore = create((set, get) => {
     resetEverything() {
       const cur = get().S
       const S = clone(DEF)
+      if (cur.personalProfile) S.personalProfile = clone(cur.personalProfile)
       S.resetAt = Math.max(Date.now(), (Number(cur.resetAt) || 0) + 1)
       S.resetIds = mergeResetIds(cur.resetIds, resetIdsOf(cur))
       get().replaceState(S, !!get().user)

@@ -77,3 +77,23 @@ export function personalHasData(state = {}) {
   return Object.entries(PERSONAL_RECORDS).some(([section, fields]) =>
     fields.some(field => (state[section]?.[field]?.length ?? 0) > 0))
 }
+
+// Schema installation and generated identity are not edits by the owner. Leaving
+// those out preserves the original unsynced-change count after an old profile loads.
+export function personalSyncContent(state = {}) {
+  const out = {}
+  for (const [section, fields] of Object.entries(PERSONAL_RECORDS)) {
+    const content = {}
+    for (const field of fields) if (state[section]?.[field]?.length) content[field] = state[section][field]
+    if (section === 'health') {
+      const config = state.health?.config
+      if (config?.origins?.length || config?.background) content.config = config
+      if (Object.keys(state.health?.status || {}).length) content.status = state.health.status
+    }
+    if (Object.keys(content).length) out[section] = content
+  }
+  const profile = Object.fromEntries(Object.entries(state.personalProfile || {}).filter(([key, value]) =>
+    !['schemaVersion', 'id', 'createdAt', 'updatedAt', 'deletedAt'].includes(key) && value !== null && value !== '' && value !== undefined))
+  if (Object.keys(profile).length) out.personalProfile = profile
+  return out
+}

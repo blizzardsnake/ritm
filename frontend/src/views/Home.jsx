@@ -10,6 +10,7 @@ import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { tappable } from '../lib/use-sheet-keyboard.js'
 import { glyphOf } from '../lib/glyphs.js'
+import { summarizeNutritionDay } from '../lib/personal/nutrition.js'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
   const [weekOffset, setWeekOffset] = useState(0)
+  const nutritionToday = summarizeNutritionDay(S.nutrition, todayISO())
 
   const today = new Date()
   // A weekday can hold several routines. `todayRoutines` is the whole day; `routine` is the
@@ -67,6 +69,12 @@ export default function Home() {
     <div className="hdr">
       <div><h1>{user ? t('Hi {0}', user.name) : 'openGym'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
+    </div>
+
+    <div className="card tappable" {...tappable(() => nav('/nutrition'))}>
+      <div className="row between"><h2>{t('Nutrition today')}</h2><span className="tag acc">{t('Open diary')}</span></div>
+      <div className="sub">{nutritionToday.itemCount ? `${nutritionToday.totals.kcal == null ? '—' : Math.round(nutritionToday.totals.kcal)} ${t('kcal')} · ${t('{0} meals', nutritionToday.mealCount)}` : t('No meals recorded for this day')}</div>
+      <div className="small muted">{nutritionToday.complete ? t('Day marked complete. Unknown macros still remain unknown.') : t('Partial diary: totals include recorded foods only.')}</div>
     </div>
 
     <div className="card">

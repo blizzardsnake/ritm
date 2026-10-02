@@ -8,6 +8,7 @@
  * same workout are one change, and a changed setting and a changed plan are one change together.
  */
 
+import { PERSONAL_RECORDS, personalSyncContent } from './personal/state.js'
 const list = v => (Array.isArray(v) ? v : [])
 
 // FNV-1a over the JSON text: cheap, stable across runs, and plenty to tell an entry that is the
@@ -28,7 +29,7 @@ const LISTS = {
   c: ['customEx', e => e?.id],
 }
 // Not content: the stamp and the revision say when, not what; the running workout never syncs.
-const NOT_CONTENT = new Set(['_ts', '_rev', 'active', ...Object.values(LISTS).map(([f]) => f)])
+const NOT_CONTENT = new Set(['_ts', '_rev', 'active', 'personalProfile', ...Object.keys(PERSONAL_RECORDS), ...Object.values(LISTS).map(([f]) => f)])
 
 /** A fingerprint of `S`: per-entry hashes of the counted lists, one hash (`s`) for the rest. */
 export function syncFingerprint(S) {
@@ -42,6 +43,7 @@ export function syncFingerprint(S) {
   }
   const rest = {}
   for (const f of Object.keys(S || {}).sort()) if (!NOT_CONTENT.has(f)) rest[f] = S[f]
+  Object.assign(rest, personalSyncContent(S))
   fp.s = hash(rest)
   return fp
 }

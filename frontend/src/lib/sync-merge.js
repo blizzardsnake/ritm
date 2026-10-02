@@ -65,6 +65,7 @@
  * would close it.
  */
 import { beatsWeight } from './exercises.js'
+import { PERSONAL_RECORDS, mergePersonalState } from './personal/state.js'
 import { bestWeightForEntry } from './history.js'
 import { convertStateUnit, convertBodyWeight } from './units.js'
 
@@ -218,6 +219,7 @@ const RESET_LISTS = {
   gymCards: x => x?.id, equipProfiles: x => x?.id, favEx: x => x,
 }
 const RESET_MAPS = ['exNotes', 'barWeights', 'balanceOverrides', 'loadKind', 'plates']
+const PERSONAL_RESET_FIELDS = Object.entries(PERSONAL_RECORDS).flatMap(([section, fields]) => fields.map(field => `personal:${section}:${field}`))
 /** An entry's name in resetIds: a workout's id (or day and start), a weigh-in's day and time, … */
 export const entryKey = (field, x) => String(RESET_LISTS[field](x))
 // Per field, the most names a reset keeps — far more workouts than anyone logs, and a bound on
@@ -228,7 +230,7 @@ const capIds = xs => (xs.length > RESET_ID_MAX ? xs.slice(xs.length - RESET_ID_M
 /** Every field's names from `a` then `b`, each once, capped (see RESET_ID_MAX). */
 export function mergeResetIds(a, b) {
   const out = {}
-  for (const f of [...Object.keys(RESET_LISTS), ...RESET_MAPS]) {
+  for (const f of [...Object.keys(RESET_LISTS), ...RESET_MAPS, ...PERSONAL_RESET_FIELDS]) {
     const xs = [...new Set([...list(a?.[f]), ...list(b?.[f])].filter(k => k != null).map(String))]
     if (xs.length) out[f] = capIds(xs)
   }
@@ -243,6 +245,9 @@ export function resetIdsOf(...copies) {
     const one = {}
     for (const [f, key] of Object.entries(RESET_LISTS)) one[f] = list(S[f]).filter(x => x != null).map(key)
     for (const f of RESET_MAPS) one[f] = Object.keys(isMap(S[f]) ? S[f] : {})
+    for (const [section, fields] of Object.entries(PERSONAL_RECORDS)) {
+      for (const field of fields) one[`personal:${section}:${field}`] = list(S[section]?.[field]).map(record => record?.id)
+    }
     out = mergeResetIds(out, one)
   }
   return out
@@ -255,6 +260,14 @@ export function resetIdsOf(...copies) {
  */
 export function sinceReset(S, at, ids) {
   const out = clone(S)
+  for (const [section, fields] of Object.entries(PERSONAL_RECORDS)) {
+    if (!S[section]) continue
+    for (const field of fields) {
+      const gone = new Set(list(ids?.[`personal:${section}:${field}`]))
+      out[section][field] = list(S[section][field]).filter(record => ids
+        ? !gone.has(record?.id) : (Number(record?.createdAt) || Number(record?.updatedAt) || 0) > at)
+    }
+  }
   if (ids && typeof ids === 'object') {
     for (const [f, key] of Object.entries(RESET_LISTS)) {
       const gone = new Set(list(ids[f]).map(String))
@@ -402,6 +415,7 @@ export function mergeStates(a0, b0, { prefer } = {}) {
   for (const f of ['balanceOverrides', 'loadKind', 'plates']) {
     if (n[f] || o[f]) out[f] = clone(mergeStampedMap(n[f], o[f], prefer))
   }
+  Object.assign(out, mergePersonalState(a, b))
   out._ts = Math.max(a._ts || 0, b._ts || 0)
   if (resetAt) out.resetAt = resetAt
   if (resetIds) out.resetIds = resetIds
@@ -477,7 +491,16 @@ export function localExtras(local, server) {
   const from = unitOf(local), to = unitOf(server)
   const differs = (mine, theirs) =>
     (Number(mine.t) || 0) > (Number(theirs.t) || 0) && Number(convertBodyWeight(mine.w, from, to)) !== Number(theirs.w)
+  let personal = 0
+  for (const [section, fields] of Object.entries(PERSONAL_RECORDS)) {
+    for (const field of fields) {
+      const remote = new Map(list(server?.[section]?.[field]).map(record => [record.id, record]))
+      personal += list(local?.[section]?.[field]).filter(record => !remote.has(record.id)
+        || (Number(record.updatedAt) || 0) > (Number(remote.get(record.id).updatedAt) || 0)).length
+    }
+  }
   return {
+    ...(personal ? { personal } : {}),
     workouts: list(local?.workouts).filter(w => !have.has(workoutKey(w))).length,
     bodyweight: list(local?.bodyweight).filter(e => e && e.d != null && (!days.has(e.d) || differs(e, days.get(e.d)))).length,
     customEx: list(local?.customEx).filter(e => e && !ex.has(e.id)).length

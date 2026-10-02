@@ -1,5 +1,7 @@
+import personal from '../lib/personal/en.js'
 // French UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...personal,
   'Confirm': 'Confirmer',
   'Cancel': 'Annuler',
   'Press back again to exit': 'Appuyez de nouveau pour quitter',

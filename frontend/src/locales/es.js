@@ -1,5 +1,7 @@
+import personal from '../lib/personal/en.js'
 // Spanish UI strings. Keys are the English source strings (see lib/i18n.js).
 export default {
+  ...personal,
   'Confirm': 'Confirmar',
   'Cancel': 'Cancelar',
   'Press back again to exit': 'Pulsa atrás otra vez para salir',
