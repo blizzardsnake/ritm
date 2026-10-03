@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+// Preserve the upstream algorithm tests; personal edition has a separate refusal test.
+vi.mock('./personal/edition.js', () => ({ ALLOW_UPSTREAM_APK_UPDATES: true }))
 import { checkForUpdate, sha256, resetUpdateCheck } from './update.js'
 
 // __APP_VERSION__ is defined at build time by vite.config.js (reads package.json).

@@ -23,6 +23,10 @@ public class InstallPlugin extends Plugin {
 
     @PluginMethod
     public void installApk(PluginCall call) {
+        if (!EditionPolicy.allowsUpstreamUpdates(getContext().getPackageName())) {
+            call.reject("Upstream APK installation is disabled for RITM Personal");
+            return;
+        }
         String fileName = call.getString("fileName");
         if (fileName == null || fileName.isEmpty()) {
             call.reject("fileName is required");

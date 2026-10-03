@@ -13,6 +13,10 @@ frontend/dist/
 node_modules/
 *.log
 .DS_Store
+*.jks
+*.keystore
+signing-recovery.json
+artifacts/
 node_modules
 .claude/
 .agents/
