@@ -1,7 +1,7 @@
 import { planFingerprint, exerciseFingerprint, canonicalJson, fingerprint } from './plan.js'
 import { validDate } from './time.js'
 import { buildSessionEntries } from '../session-start.js'
-import { modeOf } from '../history.js'
+import { modeOf, repStep } from '../history.js'
 import { NUTRIENT_KEYS } from './nutrition.js'
 export { planFingerprint } from './plan.js'
 export const PROPOSAL_FORMAT = 'ritm-weekly-proposal'
@@ -34,6 +34,7 @@ function checkChanges(changes, state) {
       if (change.unit !== unit || change.value < (change.field === 'weight' ? 0 : 1)
         || change.value > (change.field === 'sets' ? 30 : change.field === 'weight' && unit === 'lb' ? 2205 : 1000)
         || change.field !== 'weight' && !Number.isInteger(change.value)
+        || change.field === 'reps' && change.value % repStep(cfg) !== 0
         || change.field === 'reps' && cfg.repsMin > change.value) throw new Error('Неверное значение или единицы нагрузки')
     } else if (change.type === 'nutrition') {
       if (change.routineId !== undefined || change.exerciseId !== undefined || !NUTRIENT_KEYS.includes(change.field)

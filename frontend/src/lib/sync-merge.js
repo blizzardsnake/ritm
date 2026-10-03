@@ -415,7 +415,7 @@ export function mergeStates(a0, b0, { prefer } = {}) {
   for (const f of ['balanceOverrides', 'loadKind', 'plates']) {
     if (n[f] || o[f]) out[f] = clone(mergeStampedMap(n[f], o[f], prefer))
   }
-  Object.assign(out, mergePersonalState(a, b))
+  Object.assign(out, mergePersonalState(a, b, { prefer }))
   out._ts = Math.max(a._ts || 0, b._ts || 0)
   if (resetAt) out.resetAt = resetAt
   if (resetIds) out.resetIds = resetIds

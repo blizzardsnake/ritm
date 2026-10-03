@@ -6,6 +6,8 @@ import { isSideSet, syncSideAggregate } from './workout-model.js'
 import { workoutVolume } from './history.js'
 import { EXIDX } from './exercises.js'
 import { defaultBarWeight } from './bar.js'
+import { pendingExerciseOverrides } from './personal/overrides.js'
+import { exerciseFingerprint } from './personal/plan.js'
 
 const LB_PER_KG = 2.2046226218
 
@@ -78,6 +80,10 @@ const convEntry = (e, from, to) => {
 export function convertStateUnit(S, to) {
   const from = S.unit || 'kg'
   if (from === to) return S
+  // Only rebind prescriptions that still apply before the switch. A manual edit
+  // or a completed workout must not resurrect a previously invalidated override.
+  const pending = new Set((S.routines || []).flatMap(r => (r.ex || [])
+    .flatMap(cfg => pendingExerciseOverrides(S, cfg, r).map(o => o.id))))
   const c = v => convertWeight(v, from, to)
   const bw = v => convertBodyWeight(v, from, to)
   // A session carries its body weight of the day and a cached total volume; History rows, the
@@ -102,5 +108,13 @@ export function convertStateUnit(S, to) {
   if (Array.isArray(S.routines)) out.routines = S.routines.map(r => ({ ...r, ex: (r.ex || []).map(cfg => convTarget(cfg, from, to)) }))
   if (Array.isArray(S.workouts)) out.workouts = S.workouts.map(convSession)
   if (S.active) out.active = convSession(S.active)
+  if (pending.size) out.weeklyReviews = { ...S.weeklyReviews, overrides: S.weeklyReviews.overrides.map(o => {
+    if (!pending.has(o.id)) return o
+    const routine = out.routines.find(r => r.id === o.routineId)
+    const cfg = routine.ex.find(e => e.id === o.exerciseId)
+    return { ...o, ...(o.field === 'weight' ? { value: c(o.value), unit: to } : {}),
+      baseHash: exerciseFingerprint(cfg, routine, to) }
+  }) }
+  // Journal before-values retain their original units for an honest audit trail.
   return out
 }

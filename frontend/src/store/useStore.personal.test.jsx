@@ -7,13 +7,41 @@ import { migratePersonalState } from '../lib/personal/state.js'
 import { mergeStates, localExtras, resetIdsOf } from '../lib/sync-merge.js'
 import { syncFingerprint, countChanges } from '../lib/sync-changes.js'
 import { convertStateUnit } from '../lib/units.js'
+import { api } from '../lib/api.js'
 
 const meal = { id: 'm1', createdAt: 1, updatedAt: 2, date: '2026-10-02', items: [{ grams: 37.5, nutrients: { kcal: 75, protein: 1.5, fat: 0, carbs: null } }] }
 const personal = () => migratePersonalState(DEF, { now: 1, profileId: 'owner' })
-beforeEach(() => { localStorage.clear(); useStore.setState({ S: personal(), user: null, ready: false }) })
+beforeEach(() => { api.mockReset(); localStorage.clear(); useStore.setState({ S: personal(), user: null, ready: false, config: { coach: null } }) })
 afterEach(() => { localStorage.clear(); useStore.setState({ S: structuredClone(DEF), user: null, ready: false }) })
 
 describe('personal data in original persistence and sync', () => {
+  it('adopts food-only guest edits through the real sign-in flow while keeping the account report identity', async () => {
+    const account = personal(); account.personalProfile.id = 'account-owner'; account.personalProfile.updatedAt = 10
+    account.weeklyReviews.proposals = [{ id: 'account-proposal', profileId: 'account-owner' }]; account._ts = 10
+    const guest = personal(); guest.personalProfile.id = 'newer-guest'; guest.personalProfile.updatedAt = 100; guest._ts = 100
+    guest.nutrition.meals = [meal]
+    useStore.setState({ S: guest })
+    useStore.getState().setUser({ id: 'user', name: 'Owner' }, { adopt: true })
+    api.mockResolvedValueOnce({ state: account, rev: 4 }).mockResolvedValueOnce({ state: account, rev: 4 }).mockResolvedValueOnce({ ok: true, rev: 5 })
+    const ask = vi.fn(async () => true)
+    expect(await useStore.getState().adoptProfile(ask)).toMatchObject({ adopted: true, added: true })
+    expect(ask.mock.calls[0][0].personal).toBeGreaterThan(0)
+    const saved = JSON.parse(localStorage.getItem('gym_state_v1'))
+    expect(saved.personalProfile.id).toBe('account-owner')
+    expect(saved.weeklyReviews.proposals[0].profileId).toBe(saved.personalProfile.id)
+    expect(saved.nutrition.meals).toEqual([meal])
+  })
+  it('keeps the destination account identity when adopting a newer food-only guest and preserves both histories', () => {
+    const account = personal(); account.personalProfile.id = 'account-owner'; account.personalProfile.updatedAt = 10
+    account.weeklyReviews.proposals = [{ id: 'account-proposal', profileId: 'account-owner' }]
+    const guest = personal(); guest.personalProfile.id = 'fresh-device'; guest.personalProfile.updatedAt = 100
+    guest.nutrition.meals = [meal]; guest._ts = 100
+    const adopted = mergeStates(account, guest, { prefer: 'a' })
+    expect(adopted.personalProfile.id).toBe('account-owner')
+    expect(adopted.weeklyReviews.proposals[0].profileId).toBe(adopted.personalProfile.id)
+    expect(adopted.nutrition.meals).toEqual([meal])
+    expect(mergeStates(guest, account, { prefer: 'b' }).personalProfile.id).toBe('account-owner')
+  })
   it('protects a food-only local profile against an older remote replacement', () => {
     const local = personal()
     local.nutrition.meals = [meal]

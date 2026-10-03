@@ -58,7 +58,7 @@ export default function PersonalHealth() {
         <Button busy={busy} variant="primary" icon="reset" onClick={() => run()}>{t('Refresh health data')}</Button>
         <Button disabled={busy} variant="ghost" onClick={() => NativeHealth.openSettings().catch(error => setMessage(error.message))}>{t('Health Connect settings')}</Button>
       </div>}
-      <span className="small muted">{t('Last successful read')}: {timeLabel(status.lastSyncAt)} · {t('Status checked')}: {timeLabel(status.checkedAt)}</span>
+      <span className="small muted">{t('Last successful read')}: {timeLabel(status.lastSyncAt)} · {t('Last read attempt')}: {timeLabel(status.lastAttemptAt)} · {t('Status checked')}: {timeLabel(status.checkedAt)}</span>
     </section>
     {message && <p role="status" className="personal-panel">{message}</p>}
     <section className="personal-panel personal-stack">
@@ -68,7 +68,7 @@ export default function PersonalHealth() {
       {day.heartRate.count > 0 && <p className="small muted">{t('Heart rate')}: {day.heartRate.min}–{day.heartRate.max} {t('bpm')} · {t('{0} measured samples', day.heartRate.count)}</p>}
       {day.activities.length > 0 && <p className="small muted">{t('Recorded activities')}: {day.activities.length}</p>}
       <p className="small muted">{t('A dash means missing data, not zero. Band wear detection is unknown; an unstaged interval is not confirmed sleep.')}</p>
-      {day.daily && <p className="small muted">{t('Measurement sources')}: {day.daily.origins.join(', ')} · {t('Imported')}: {timeLabel(day.daily.ingestedAt)}</p>}
+      {day.daily && <p className="small muted">{t('Measurement sources')}: {day.daily.origins.join(', ')}</p>}
     </section>
     <section className="personal-panel personal-stack">
       <h2>{t('Data sources')}</h2>

@@ -23,6 +23,18 @@ function fixture() {
 }
 
 describe('combined analysis snapshot', () => {
+  it('exports metric-specific read freshness and the failed attempt separately from successful imports', () => {
+    const state = fixture(); state.health.config.origins = ['mi']
+    state.health.status = { lastSyncAt: 300, lastAttemptAt: 400 }
+    state.health.daily = [{ id: 'day', date: '2026-10-02', origins: ['mi'], steps: 1000, distanceM: 900,
+      ingestedAt: 300, metricStatus: { steps: 'read_error', distance: 'available' }, metricIngestedAt: { steps: 100, distance: 300, unrelated: 'secret-value' } }]
+    const report = buildAnalysis(state, { now })
+    expect(report.history.health.status).toMatchObject({ lastSyncAt: 300, lastAttemptAt: 400 })
+    expect(report.history.health.daily[0].metricIngestedAt).toEqual({ steps: 100, distance: 300 })
+    expect(report.summaries.health.find(day => day.date === '2026-10-02')).toMatchObject({ metricIngestedAt: { steps: 100, distance: 300 }, metricStatus: { steps: 'read_error' } })
+    expect(report.quality.lastHealthAttemptAt).toBe(400)
+    expect(JSON.stringify(report)).not.toContain('secret-value')
+  })
   it('keeps two daily workouts, context, effort and unknown old set times, using original work volume', () => {
     const state = fixture()
     const report = buildAnalysis(state, { from: '2026-10-02', to: '2026-10-02', now })

@@ -121,12 +121,16 @@ export function mergeHealthSnapshot(health, snapshot) {
     const previous = index >= 0 ? result.daily[index] : null
     if ((previous?.updatedAt || 0) > snapshot.generatedAt) continue
     const day = { ...previous, id, date, originKey: key, origins: [...snapshot.origins], timezone: snapshot.timezone,
-      ingestedAt: snapshot.generatedAt, createdAt: previous?.createdAt ?? snapshot.generatedAt, updatedAt: snapshot.generatedAt, deletedAt: null,
+      ingestedAt: completed.size ? snapshot.generatedAt : previous?.ingestedAt ?? null,
+      metricIngestedAt: { ...previous?.metricIngestedAt },
+      createdAt: previous?.createdAt ?? snapshot.generatedAt, updatedAt: snapshot.generatedAt, deletedAt: null,
       metricStatus: { ...previous?.metricStatus, ...snapshot.metricStatus, ...incoming?.metricStatus },
       permissions: structuredClone(snapshot.permissions || {}), generation: snapshot.generation,
       sourceRecords: { ...previous?.sourceRecords }, intervals: { ...previous?.intervals } }
     for (const [metric, field] of Object.entries(DAILY_FIELDS)) {
+      if (day.metricIngestedAt[metric] == null && previous?.[field] != null && previous.ingestedAt != null) day.metricIngestedAt[metric] = previous.ingestedAt
       if (completed.has(metric)) {
+        day.metricIngestedAt[metric] = snapshot.generatedAt
         day[field] = valueOf(incoming?.[field])
         day.sourceRecords[metric] = (incoming?.sourceRecords?.[metric] || []).map(record => { interval(record, snapshot); return structuredClone(record) })
         const aggregate = incoming?.intervals?.[metric]
@@ -137,6 +141,7 @@ export function mergeHealthSnapshot(health, snapshot) {
       }
       else if (!previous) day[field] = null
     }
+    for (const metric of ['sleep', 'heartRate', 'activities']) if (completed.has(metric)) day.metricIngestedAt[metric] = snapshot.generatedAt
     if (index < 0) result.daily.push(day); else result.daily[index] = day
   }
   result.daily.sort((a, b) => a.id.localeCompare(b.id))
@@ -150,7 +155,10 @@ export function mergeHealthSnapshot(health, snapshot) {
     return next
   }), snapshot)
   if (completed.has('activities')) result.activities = replaceIntervals(result.activities, (snapshot.activities || []).map(record => interval(record, snapshot)), snapshot)
-  if (health.status?.originKey !== key || (health.status?.lastSyncAt || 0) <= snapshot.generatedAt) result.status = { ...result.status, updatedAt: snapshot.generatedAt, lastSyncAt: snapshot.generatedAt, availability: 'available', originKey: key,
+  if (health.status?.originKey !== key || (health.status?.lastAttemptAt ?? health.status?.lastSyncAt ?? 0) <= snapshot.generatedAt) result.status = { ...result.status, updatedAt: snapshot.generatedAt,
+    lastAttemptAt: snapshot.generatedAt,
+    lastSyncAt: completed.size ? snapshot.generatedAt : health.status?.originKey === key ? health.status.lastSyncAt ?? null : null,
+    availability: 'available', originKey: key,
     permissions: structuredClone(snapshot.permissions || {}), metricStatus: structuredClone(snapshot.metricStatus || {}),
     origins: [...snapshot.origins], generation: snapshot.generation, offWrist: 'unknown', background: !!snapshot.background, historyLimited: !!snapshot.historyLimited }
   return result

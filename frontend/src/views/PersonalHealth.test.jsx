@@ -36,3 +36,14 @@ it('shows actual source and permission state and requests only after an explicit
   expect(mock.request).toHaveBeenCalledWith({ metrics: ['steps', 'distance', 'activeKcal', 'totalKcal', 'sleep', 'heartRate', 'activities'] })
   expect(mock.request.mock.calls[0][0]).not.toHaveProperty('background')
 })
+it('shows a metric read error next to a retained value with its successful import time', async () => {
+  await mount(true)
+  const h = mock.state.S.health
+  h.status = { ...h.status, lastSyncAt: 100, lastAttemptAt: 200, metricStatus: { steps: 'read_error' } }
+  h.daily[0] = { ...h.daily[0], steps: 1000, ingestedAt: 100, metricIngestedAt: { steps: 100 }, metricStatus: { steps: 'read_error' } }
+  await act(async () => root.render(<MemoryRouter><PersonalHealth /></MemoryRouter>))
+  const card = page.querySelector('[data-health-metric="steps"]')
+  expect(card?.textContent).toContain('Could not refresh; showing recorded value')
+  expect(card?.getAttribute('data-health-imported-at')).toBe('100')
+  expect(page.textContent).toContain('Last read attempt')
+})

@@ -11,6 +11,22 @@ const snapshot = (time = 100) => ({ schemaVersion: 1, generation: String(time), 
   daily: [{ date: '2026-10-01', steps: 1000, activeKcal: 100, totalKcal: 2200, distanceM: 800 }, { date: '2026-10-02', steps: 0 }],
   sleep: [{ sourceId: 'sleep1', origin: 'mi', start: Date.parse('2026-10-01T20:00:00Z'), end: Date.parse('2026-10-02T05:00:00Z'), stages: [] }],
   heartRate: [], activities: [] })
+it('keeps successful provenance on a failed read and updates only the successful metric during a partial read', () => {
+  const first = mergeHealthSnapshot(health(), snapshot(100))
+  const failed = snapshot(200); failed.completedMetrics = []; failed.daily = []; failed.metricStatus = { steps: 'read_error', distance: 'read_error' }
+  const next = mergeHealthSnapshot(first, failed)
+  expect(selectedHealthDaily(next)[0].steps).toBe(1000)
+  expect(selectedHealthDaily(next)[0].ingestedAt).toBe(100)
+  expect(next.status.lastSyncAt).toBe(100)
+  expect(next.status.lastAttemptAt).toBe(200)
+  const partial = snapshot(300); partial.completedMetrics = ['distance']; partial.daily[0].distanceM = 900; partial.metricStatus = { steps: 'read_error', distance: 'available' }
+  const mixed = mergeHealthSnapshot(next, partial), day = selectedHealthDaily(mixed)[0]
+  expect(day.steps).toBe(1000); expect(day.distanceM).toBe(900)
+  expect(day.metricIngestedAt).toMatchObject({ steps: 100, distance: 300 })
+  expect(mixed.status.lastSyncAt).toBe(300)
+  expect(mixed.status.lastAttemptAt).toBe(300)
+  expect(mergeHealthSnapshot(mixed, failed).status).toEqual(mixed.status)
+})
 it('replay is idempotent, corrected/deleted daily values replace old values and older snapshot cannot undo correction', () => {
   const first = mergeHealthSnapshot(health(), snapshot())
   expect(mergeHealthSnapshot(first, snapshot())).toEqual(first)

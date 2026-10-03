@@ -5,6 +5,7 @@ import { createExchangeSnapshot } from './exchange.js'
 import { buildCombinedEntries } from '../session-merge.js'
 import { buildCompletedWorkout } from '../finish-workout.js'
 import { historyAsOf } from '../backfill.js'
+import { convertStateUnit } from '../units.js'
 import { planFingerprint, validateProposal, previewProposal, applyProposal, undoProposal, saveProposal } from './proposal.js'
 
 const now = Date.parse('2026-10-03T12:00:00Z')
@@ -34,6 +35,32 @@ async function fixture() {
 const work = entry => entry.sets.filter(row => row.phase !== 'warmup' && !row.warmup)
 
 describe('reviewable weekly recommendations', () => {
+  it('keeps accepted pending load and set overrides across unit conversion without reviving a manually invalidated one', async () => {
+    const { s, snapshot, doc } = await fixture(); doc.changes[0].value = 60
+    const accepted = applyProposal(s, validateProposal(doc, s, snapshot), ['load', 'sets'], { now })
+    const pounds = convertStateUnit(accepted, 'lb')
+    const opening = buildCombinedEntries(pounds, ['A']).entries[0]
+    expect(work(opening).map(row => row.w)).toEqual([132.5, 132.5])
+    expect(opening.personalOverrideIds).toHaveLength(2)
+    expect(undoProposal(pounds, doc.id).conflicts.length).toBeGreaterThan(0)
+    const back = convertStateUnit(pounds, 'kg')
+    expect(work(buildCombinedEntries(back, ['A']).entries[0]).map(row => row.w)).toEqual([60, 60])
+    expect(undoProposal(back, doc.id).conflicts).toEqual([])
+    accepted.routines[0].ex[0].weight = 90
+    expect(buildCombinedEntries(convertStateUnit(accepted, 'lb'), ['A']).entries[0].personalOverrideIds).toBeUndefined()
+    expect(pounds.weeklyReviews.journal[0].changes[0].unit).toBe('kg')
+  })
+  it('rejects an odd total rep target for a unilateral exercise and opens even targets as integer limb repetitions', async () => {
+    const { s, doc } = await fixture(); s.routines[0].ex[0].side = true; s.routines[0].ex[0].reps = 8
+    const snapshot = await createExchangeSnapshot(buildAnalysis(s, { now })); doc.analysisHash = snapshot.checksum; doc.planHash = planFingerprint(s)
+    doc.changes = [{ ...doc.changes[1], id: 'reps', field: 'reps', unit: 'reps', value: 9 }]
+    expect(() => validateProposal(doc, s, snapshot)).toThrow()
+    doc.changes[0].value = 10
+    const after = applyProposal(s, validateProposal(doc, s, snapshot), ['reps'], { now })
+    for (const row of work(buildCombinedEntries(after, ['A']).entries[0])) {
+      expect(row.sides.L.r).toBe(5); expect(row.sides.R.r).toBe(5)
+    }
+  })
   it('binds the report to the current future plan and detects a history-driven prescription change', async () => {
     const { s, snapshot, doc } = await fixture()
     expect(snapshot.payload.plan.fingerprint).toBe(doc.planHash)

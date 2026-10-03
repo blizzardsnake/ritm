@@ -56,9 +56,11 @@ export function mergePersonalRecords(a = [], b = []) {
   return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id)).map(record => structuredClone(record))
 }
 
-export function mergePersonalState(a = {}, b = {}) {
+export function mergePersonalState(a = {}, b = {}, { prefer } = {}) {
   const result = {}
-  const profile = winner(a.personalProfile, b.personalProfile)
+  const destination = prefer === 'a' ? a.personalProfile : prefer === 'b' ? b.personalProfile : null
+  const differentOwners = a.personalProfile?.id !== b.personalProfile?.id
+  const profile = differentOwners && destination?.id ? destination : winner(a.personalProfile, b.personalProfile)
   if (profile) result.personalProfile = structuredClone(profile)
   for (const [section, fields] of Object.entries(PERSONAL_RECORDS)) {
     if (!a[section] && !b[section]) continue

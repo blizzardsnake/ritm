@@ -3,7 +3,7 @@ import { buildSessionEntries } from '../session-start.js'
 import { NUTRIENT_KEYS, summarizeNutritionDay } from './nutrition.js'
 import { PERSONAL_RECORDS } from './state.js'
 import { eventTime, validDate, shiftDate, datesBetween } from './time.js'
-import { selectedHealthDaily } from './health.js'
+import { selectedHealthDaily, HEALTH_METRICS } from './health.js'
 import { calculatePersonalProgress, reconcileAwards } from './progress.js'
 import { planFingerprint } from './plan.js'
 import { loadOfWorkouts } from '../muscles.js'
@@ -18,6 +18,7 @@ const META = ['id', 'createdAt', 'updatedAt', 'deletedAt', 'recordedAt', 'modifi
 const CLOCK = ['at', 'date', 'timezone', 'offsetMinutes', 'start', 'end', 'startOffsetMinutes', 'endOffsetMinutes']
 const CFG = ['id', 'sets', 'reps', 'repsMin', 'repsMax', 'weight', 'sec', 'min', 'speed', 'mode', 'rest', 'inc', 'side', 'bodyweight', 'policy', 'prog', 'deloadFactor', 'warmupSets', 'sg', 'note', 'warmup', 'intensifier', 'drops', 'clusters', 'noProg', 'excludeFromProgression']
 const nutrients = value => Object.fromEntries(NUTRIENT_KEYS.map(key => [key, finite(value?.[key])]))
+const metricTimes = value => Object.fromEntries(HEALTH_METRICS.filter(key => finite(value?.[key]) != null).map(key => [key, value[key]]))
 function safeSet(row) {
   const result = pick(row, ['w', 'r', 'sec', 'min', 'speed', 'done', 'phase', 'warmup', 'mode', 'type', 'rir', 'rpe', 'modifiedAt'])
   result.completedAt = finite(row?.completedAt)
@@ -61,12 +62,12 @@ function safeItem(item, depth = 0) {
 function safeHealth(health, inWindow) {
   const sourceRecord = item => ({ ...pick(item, ['sourceId', 'origin', 'start', 'end', 'startOffsetMinutes', 'endOffsetMinutes', 'modifiedAt', 'recordingMethod', 'value', 'unit']), device: pick(item.device, ['type', 'manufacturer', 'model']) })
   return {
-    daily: live(health?.daily).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'steps', 'activeKcal', 'totalKcal', 'distanceM', 'originKey', 'origins', 'metricStatus', 'permissions', 'ingestedAt', 'generation']), sourceRecords: Object.fromEntries(Object.entries(item.sourceRecords || {}).map(([metric, records]) => [metric, records.map(sourceRecord)])), intervals: Object.fromEntries(Object.entries(item.intervals || {}).map(([metric, range]) => [metric, range ? pick(range, ['start', 'end', 'origins']) : null])) })),
+    daily: live(health?.daily).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'steps', 'activeKcal', 'totalKcal', 'distanceM', 'originKey', 'origins', 'metricStatus', 'permissions', 'ingestedAt', 'generation']), metricIngestedAt: metricTimes(item.metricIngestedAt), sourceRecords: Object.fromEntries(Object.entries(item.sourceRecords || {}).map(([metric, records]) => [metric, records.map(sourceRecord)])), intervals: Object.fromEntries(Object.entries(item.intervals || {}).map(([metric, range]) => [metric, range ? pick(range, ['start', 'end', 'origins']) : null])) })),
     sleep: live(health?.sleep).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'title', 'ingestedAt', 'durationMinutes', 'asleepMinutes', 'knownAsleepMinutes', 'stageCoverage', 'hasStages', 'recordingMethod']), device: pick(item.device, ['type', 'manufacturer', 'model']), stages: (item.stages || []).map(stage => pick(stage, ['start', 'end', 'stage'])) })),
     heartRate: live(health?.heartRate).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'ingestedAt', 'recordingMethod']), device: pick(item.device, ['type', 'manufacturer', 'model']), samples: (item.samples || []).map(sample => pick(sample, ['at', 'bpm'])) })),
     activities: live(health?.activities).filter(inWindow).map(item => ({ ...pick(item, [...META, ...CLOCK, 'origin', 'sourceId', 'ingestedAt', 'title', 'exerciseType', 'linkedWorkoutId', 'recordingMethod']), device: pick(item.device, ['type', 'manufacturer', 'model']) })),
     config: pick(health?.config, ['origins', 'background', 'updatedAt']),
-    status: pick(health?.status, ['updatedAt', 'lastSyncAt', 'availability', 'permissions', 'metricStatus', 'origins', 'error', 'background', 'generation']),
+    status: pick(health?.status, ['updatedAt', 'lastSyncAt', 'lastAttemptAt', 'availability', 'permissions', 'metricStatus', 'origins', 'error', 'background', 'generation']),
   }
 }
 function safeChange(change) {
@@ -102,7 +103,7 @@ export function buildAnalysis(state, { from, to, now = Date.now(), timezone } = 
   const dailyHealth = days.map(date => {
     const day = selectedHealthDaily({ ...health, daily: health.daily }).find(item => item.date === date)
     return { date, steps: finite(day?.steps), activeKcal: finite(day?.activeKcal), totalKcal: finite(day?.totalKcal), distanceM: finite(day?.distanceM), origins: day?.origins || [],
-      metricStatus: day?.metricStatus || {}, ingestedAt: day?.ingestedAt ?? null,
+      metricStatus: day?.metricStatus || {}, ingestedAt: day?.ingestedAt ?? null, metricIngestedAt: day?.metricIngestedAt || {},
       sleep: health.sleep.filter(item => item.date === date && health.config.origins?.includes(item.origin)), observed: !!day && [day.steps, day.activeKcal, day.totalKcal, day.distanceM].some(value => finite(value) != null) }
   })
   const routines = live(state.routines).map(routine => ({ ...pick(routine, ['id', 'name', 'emoji', 'excludeFromProgression', 'policy', 'prog']), ex: (routine.ex || []).map(safeCfg) }))
@@ -130,7 +131,7 @@ export function buildAnalysis(state, { from, to, now = Date.now(), timezone } = 
       nextSessions: live(state.routines).map(routine => ({ routineId: routine.id, entries: buildSessionEntries(state, routine).map(safeEntry) })) },
     summaries: { workouts: { count: selected.length, volume: selected.reduce((sum, workout) => sum + workoutVolume(workout), 0), durationMs: selected.reduce((sum, workout) => sum + workoutDuration(workout), 0) }, muscleLoad: loadOfWorkouts(selected), nutrition: dailyFood, health: dailyHealth, progress },
     quality: { incompleteFoodDays: dailyFood.filter(day => !day.complete).length, missingHealthDays: dailyHealth.filter(day => !day.observed).length,
-      lastHealthSyncAt: finite(state.health?.status?.lastSyncAt), offWrist: 'unknown', oldSetTimesUnknown: workouts.some(w => w.entries?.some(e => e.sets?.some(row => row.done && row.completedAt == null))),
+      lastHealthSyncAt: finite(state.health?.status?.lastSyncAt), lastHealthAttemptAt: finite(state.health?.status?.lastAttemptAt), offWrist: 'unknown', oldSetTimesUnknown: workouts.some(w => w.entries?.some(e => e.sets?.some(row => row.done && row.completedAt == null))),
       energyRule: 'totalKcal and activeKcal are separate; never added to each other or workout estimates' },
   })
 }
