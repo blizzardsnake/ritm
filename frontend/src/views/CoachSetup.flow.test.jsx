@@ -98,6 +98,17 @@ const pickModel = value => act(() => {
 const openByok = async () => { await click(rowTitled('Bring my own API key')) }
 
 describe('CoachSetup — free cloud on this phone', () => {
+  it('keeps the embedded reconnection form usable after disconnecting a provider with a lost key', async () => {
+    mocks.user = null
+    mocks.coachLocal = { mode: 'byok', provider: 'compatible', freeOnly: true, baseUrl: 'https://openrouter.ai/api', model: 'openrouter/free' }
+    await act(async () => root.render(<CoachSetup embedded initialFree />))
+    expect(field('password')).toBeTruthy()
+    await click(rowTitled('Turn the Coach off on this phone')); await settle()
+    expect(mocks.setCoachLocal).toHaveBeenCalledWith({ mode: 'off' })
+    expect(field('password')).toBeTruthy()
+    expect(btn('List models')).toBeTruthy()
+    expect(localModels).not.toHaveBeenCalled()
+  })
   it('opens the built-in assistant directly at free setup without sending a request or enabling an unconfigured provider', async () => {
     mocks.user = null
     await act(async () => root.render(<CoachSetup embedded initialFree />))

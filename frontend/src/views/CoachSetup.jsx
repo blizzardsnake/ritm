@@ -134,7 +134,9 @@ export default function CoachSetup({ embedded = false, initialFree = false }) {
     await setCoachLocal({ mode: 'off' })
     const local = await import('../lib/coach-local.js').catch(() => null)
     if (local) await local.localForget()
-    setChoice(null)
+    setKey(''); setModels(null); setStep(-1)
+    if (initialFree) chooseFree()
+    else setChoice(null)
     toast(t('The Coach is off'))
   }
 
