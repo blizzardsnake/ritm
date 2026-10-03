@@ -3,6 +3,7 @@
    ISO dates are validated on the way in; the handlers never see 'yesterday'. */
 import { z } from 'zod'
 import { getState, getUser } from './state.js'
+import { analysisFile, personalReport, withinSnapshot } from './personal.js'
 import {
   fmt, setLabel, exLine, muscleName, policyName, friendlyDuration, ratio, muscleOrder
 } from './labels.js'
@@ -572,8 +573,46 @@ export const previewSession = {
 
 /* ---------- registration list ---------- */
 
+const personalSchema = { profile_id: z.string().min(1).optional(), from: z.string().optional(), to: z.string().optional() }
+const personalHandler = handler => params => {
+  try { return handler(params) } catch (error) { if (error.code === 'NO_STATE') return noState(); throw error }
+}
+function reportFor(params = {}, subset = false) {
+  const fileMode = !!analysisFile()
+  return personalReport(fileMode ? null : getState(), fileMode ? null : getUser(), subset && fileMode ? { profile_id: params.profile_id } : params)
+}
+export const getPersonalReport = {
+  name: 'get_personal_report', schema: personalSchema,
+  description: 'Read the verified combined RITM report: actual training, nutrition, bodyweight, watch data, record completeness, original muscle load, goals and the effective next-session plan. Includes selected dates, four-week context, profile, watermark and freshness. In file mode dates must match the original report window. Read-only.',
+  handler: personalHandler(params => reportFor(params)),
+}
+export const getNutritionDays = {
+  name: 'get_nutrition_days', schema: personalSchema,
+  description: 'Read daily actual food totals and completeness from the same calculator as the phone. Missing values stay null. Planned meals remain separate from eaten meals. Date ranges must lie within a file snapshot. Read-only.',
+  handler: personalHandler((params = {}) => {
+    const { report, source } = reportFor(params, true); const selected = withinSnapshot(report, params)
+    return { source, window: report.window, selected, units: report.units, days: report.summaries.nutrition.filter(d => d.date >= selected.from && d.date <= selected.to),
+      meals: report.history.nutrition.meals.filter(d => d.date >= selected.from && d.date <= selected.to), targets: report.history.nutrition.targets, mealPlans: report.history.nutrition.mealPlans }
+  }),
+}
+export const getHealthHistory = {
+  name: 'get_health_history', schema: personalSchema,
+  description: 'Read selected-source daily steps, separate active/total energy and sleep. Observed zero differs from missing null. Raw source-aware history includes the explicitly labelled context window. Off-wrist state is unknown; calories must not be added together. Read-only.',
+  handler: personalHandler((params = {}) => {
+    const { report, source } = reportFor(params, true); const selected = withinSnapshot(report, params)
+    return { source, window: report.window, selected, units: report.units, daily: report.summaries.health.filter(d => d.date >= selected.from && d.date <= selected.to),
+      history: report.history.health, offWrist: report.quality.offWrist, energyRule: report.quality.energyRule }
+  }),
+}
+export const getRecordQuality = {
+  name: 'get_record_quality', schema: { profile_id: personalSchema.profile_id },
+  description: 'Read data gaps and freshness for the whole selected report window: incomplete food days, missing activity, last health sync, unknown old set times and watch-energy rules. A stale/corrupt/foreign snapshot is an error, not evidence for a new correction. Read-only.',
+  handler: personalHandler((params = {}) => { const { report, source } = reportFor(params); return { source, window: report.window, quality: report.quality } }),
+}
+
 export const TOOLS = [
-  listRoutines, getRoutine, previewSession, getWeekPlan, listWorkouts, getWorkout, getBodyweight, estimate1rm, muscleBalance
+  listRoutines, getRoutine, previewSession, getWeekPlan, listWorkouts, getWorkout, getBodyweight, estimate1rm, muscleBalance,
+  getPersonalReport, getNutritionDays, getHealthHistory, getRecordQuality
 ]
 
 function noState() {

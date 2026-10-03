@@ -9,7 +9,7 @@ export async function sha256(value) {
   const bytes = new TextEncoder().encode(typeof value === 'string' ? value : canonicalJson(value))
   return sha256Hex(bytes)
 }
-function validateEnvelope(envelope) {
+export function validateEnvelope(envelope) {
   if (envelope?.format !== ANALYSIS_FORMAT || envelope.formatVersion !== ANALYSIS_VERSION
     || typeof envelope.profileId !== 'string' || !envelope.profileId || !Number.isFinite(envelope.generatedAt)
     || !Number.isFinite(envelope.watermark) || envelope.watermark < 0 || !validDate(envelope.window?.from)

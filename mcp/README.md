@@ -1,5 +1,20 @@
 # openGym MCP server
 
+RITM adds optional report-file mode without a database. See
+[personal data exchange](../docs/personal-data-exchange.md). Set
+`OPENGYM_ANALYSIS_FILE` to the phone's exported JSON and preferably
+`OPENGYM_PROFILE_ID` to its expected profile. Four additional read-only tools
+expose the combined report, nutrition days, health history and record quality.
+Every call verifies profile/checksum/freshness; default maximum age is 168 hours,
+configurable with `OPENGYM_ANALYSIS_MAX_AGE_HOURS`. The original nine tools remain
+available in database mode; report mode directs them to the bounded report instead
+of presenting a selected period as all-time history. The main phone cloud AI does
+not require this MCP or a running computer.
+
+Run `node scripts/check-personal-stdio.mjs` for a real local handshake and report
+round trip using disposable fixtures, and `node scripts/check-node-loadable.mjs`
+to verify the complete import graph outside Vite.
+
 A [Model Context Protocol](https://modelcontextprotocol.io) bridge that lets an external LLM
 application (Claude Desktop, Cursor, Cline, Continue, etc.) read your openGym profile —
 routines, workouts, body-weight log, estimated 1RMs, and muscle balance — directly from your
