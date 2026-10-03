@@ -98,6 +98,17 @@ const pickModel = value => act(() => {
 const openByok = async () => { await click(rowTitled('Bring my own API key')) }
 
 describe('CoachSetup — free cloud on this phone', () => {
+  it('opens the built-in assistant directly at free setup without sending a request or enabling an unconfigured provider', async () => {
+    mocks.user = null
+    await act(async () => root.render(<CoachSetup embedded initialFree />))
+    expect(field('password')).toBeTruthy()
+    expect(host.textContent).toContain('Only free models. No automatic paid fallback.')
+    expect(localModels).not.toHaveBeenCalled()
+    expect(mocks.setCoachLocal).not.toHaveBeenCalled()
+    await click(btn('List models')); await settle()
+    expect(localModels).not.toHaveBeenCalled()
+    expect(mocks.toast).toHaveBeenCalledWith('Enter your API key')
+  })
   it('requires a new key instead of sending the saved key of another provider to OpenRouter', async () => {
     mocks.coachLocal = { provider: 'anthropic', model: 'old-model', mode: 'byok' }
     vi.mocked(getApiKey).mockResolvedValue('fake-key-for-another-provider')

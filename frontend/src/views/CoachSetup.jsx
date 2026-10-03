@@ -34,7 +34,7 @@ const STEPS = ['Loading the exercise catalogue…', 'Checking the endpoint…', 
 const isCleartext = url => /^http:\/\//i.test(String(url || '').trim())
 const cleartextRefused = () => t('Android blocks unencrypted http:// connections from apps, so this phone can only reach an https:// endpoint. Put HTTPS in front of it (Tailscale or a reverse proxy), or choose “Use my self-hosted openGym”: your server can reach an http:// model on its own network.')
 
-export default function CoachSetup() {
+export default function CoachSetup({ embedded = false, initialFree = false }) {
   const nav = useNavigate()
   const user = useStore(s => s.user)
   const config = useStore(s => s.config)
@@ -44,18 +44,18 @@ export default function CoachSetup() {
   const toast = useUI(s => s.toast)
   const openSheet = useUI(s => s.openSheet)
 
-  const [choice, setChoice] = useState(null)              // 'server' | 'byok' | null
-  const [provider, setProvider] = useState(coachLocal?.provider || 'anthropic')
-  const [baseUrl, setBaseUrl] = useState(coachLocal?.baseUrl || '')
+  const [choice, setChoice] = useState(initialFree ? 'byok' : null)
+  const [provider, setProvider] = useState(initialFree ? OPENROUTER_FREE_SETTINGS.provider : coachLocal?.provider || 'anthropic')
+  const [baseUrl, setBaseUrl] = useState(initialFree ? OPENROUTER_FREE_SETTINGS.baseUrl : coachLocal?.baseUrl || '')
   const [model, setModel] = useState(coachLocal?.model || '')
-  const [freeOnly, setFreeOnly] = useState(coachLocal?.freeOnly === true)
+  const [freeOnly, setFreeOnly] = useState(initialFree || coachLocal?.freeOnly === true)
   const [key, setKey] = useState('')
   const [hasKey, setHasKey] = useState(false)
   const [models, setModels] = useState(null)
   const [step, setStep] = useState(-1)                     // -1 idle, 0..2 running, 3 done
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => { if (!MOBILE) nav('/settings', { replace: true }) }, [])
+  useEffect(() => { if (!MOBILE && !embedded) nav('/settings', { replace: true }) }, [embedded])
   useEffect(() => { getApiKey().then(k => setHasKey(!!k)) }, [])
   // Ask the paired server afresh: the admin may have switched the Coach on since this phone booted.
   useEffect(() => { if (user) refreshConfig() }, [user])
@@ -76,6 +76,7 @@ export default function CoachSetup() {
 
   // The lazy load, and the reachability check, as three real steps.
   const prepare = async () => {
+    if (embedded && !MOBILE) return toast(t('Connect the cloud assistant in the RITM Android app.'))
     const v = validateBaseUrl(meta.baseUrl ? baseUrl : '')
     if (!v.ok) return toast(v.error)
     // An empty field passes the validator on purpose: for a provider with a fixed endpoint,
@@ -141,13 +142,13 @@ export default function CoachSetup() {
     : coachLocal?.mode === 'byok' ? t('Runs on this phone with your own API key')
     : t('Off — choose how the Coach should run.')
 
-  return <div className="narrow">
-    <div className="hdr">
+  return <div className={embedded ? 'ritm-assistant-setup' : 'narrow'}>
+    {!embedded && <div className="hdr">
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Back')}><Icon name="chevronLeft" /></button>
       <div style={{ flex: 1, marginInlineStart: 10 }}><h1>{t('AI Coach')}</h1></div>
-    </div>
+    </div>}
 
-    <Section title={t('How should the Coach run?')} footer={current}>
+    {!embedded && <Section title={t('How should the Coach run?')} footer={current}>
       <Row icon="sparkles" iconTint="var(--acc)" title={t('Free AI on this phone')}
         subtitle={t('OpenRouter free models over the internet. No computer needed. Your own key, no paid fallback.')}
         accessory="chevron" onClick={chooseFree} className="ritm-free-ai-choice" />
@@ -157,7 +158,7 @@ export default function CoachSetup() {
       <Row icon="key" iconTint="var(--acc)" title={t('Bring my own API key')}
         subtitle={t('This phone calls the provider directly with your key. Every request is charged to your account.')}
         accessory="chevron" onClick={() => { setChoice('byok'); setFreeOnly(false) }} />
-    </Section>
+    </Section>}
 
     {choice === 'server' && !serverHasCoach && <div className="card">
       <div className="muted small">{t('Your server has no Coach enabled — ask its admin, or bring your own key below.')}</div>
@@ -188,12 +189,15 @@ export default function CoachSetup() {
         </div>
       </Section>
 
+      <details className="ritm-assistant-data" open={embedded ? undefined : true}>
+      <summary>{t('What leaves this phone')}</summary>
       <Section title={t('What leaves this phone')}>
         {DATA_CATEGORIES.map(k => {
           const [title, sub] = CATEGORY_TEXT[k] || [k, '']
           return <Row key={k} icon="check" iconTint="var(--acc)" title={t(title)} subtitle={t(sub)} />
         })}
       </Section>
+      </details>
       <p className="sect-f" style={{ marginTop: -18, marginBottom: 22, lineHeight: 1.5 }}>
         {freeOnly ? t('Requests go to OpenRouter and its selected model provider. RITM requests providers that do not collect data; review OpenRouter privacy settings before use.') : t('Each request goes straight to {0} with your key — nobody else sees it, and you pay for it.', host || meta.label)}
       </p>
@@ -216,11 +220,12 @@ export default function CoachSetup() {
 
       <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
         {!models
-          ? <Button variant="primary" icon="sparkles" disabled={busy} onClick={prepare}>{t('List models')}</Button>
-          : <Button variant="primary" icon="check" disabled={busy} onClick={save}>{t('Save and use the Coach')}</Button>}
+          ? <Button variant="primary" icon="sparkles" busy={busy} onClick={prepare}>{t('List models')}</Button>
+          : <Button variant="primary" icon="check" busy={busy} onClick={save}>{t('Save and use the Coach')}</Button>}
         {models && <Button disabled={busy} onClick={prepare}>{t('List models')}</Button>}
       </div>
     </>}
+    {embedded && !MOBILE && <p className="small muted">{t('Connect the cloud assistant in the RITM Android app.')}</p>}
 
     {coachLocal?.mode && coachLocal.mode !== 'off' && <Section title={t('Controls')}>
       <Row icon="signOut" iconTint="var(--red)" title={t('Turn the Coach off on this phone')} danger onClick={turnOff} />

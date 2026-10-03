@@ -73,6 +73,9 @@ export default function Home() {
       <button className="iconbtn" onClick={() => nav('/settings')} aria-label={t('Settings')}><Icon name="gear" /></button>
     </div>
 
+    <button className="ritm-home-assistant" onClick={() => nav('/assistant')}>
+      <span className="ritm-assistant-orb" aria-hidden="true" /><div><strong>{t('RITM assistant')}</strong><span>{t('Your training, nutrition and recovery companion')}</span></div><span className="ritm-assistant-open">{t('Open assistant')}<Icon name="chevronRight" /></span>
+    </button>
     <section className={'ritm-workout-hero' + (doneToday && !S.active ? ' done' : '')}>
       <div className="ritm-hero-top"><span><Icon name="dumbbell" />{t('Training')}</span><span className="ritm-hero-date">{t('Today')} · {today.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' })}</span></div>
       <div className="ritm-workout-art" aria-hidden="true"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="88" /><circle cx="100" cy="100" r="66" /><circle cx="100" cy="100" r="44" /><path d="M12 100h35m106 0h35M100 12v35m0 106v35" /></svg><Icon name={S.active ? 'timer' : doneToday ? 'checkCircle' : routine ? 'dumbbell' : 'moon'} /></div>

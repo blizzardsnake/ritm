@@ -37,13 +37,14 @@ export default function TabBar({ onStart }) {
   }
 
   return (
+    <div className="ritm-bottom-dock">
     <nav id="tabbar">
       <Tab active={on('home')} icon="house" label={t('Home')} onClick={() => nav('/home')} />
       <Tab active={on('plan')} icon="calendar" label={t('Plan')} onClick={() => nav('/plan')} />
       {/* On the workout screen itself there is nothing to resume, so the button reads as the
           tab it is and stays lit (#29); anywhere else it brings you back to the exercise you
           were on — the marker is kept in S.active.cur and never moves on its own (#21). */}
-      {cur !== 'protection' && <button className={'start' + (S.active ? ' rec' : '') + (S.active && cur === 'workout' ? ' on' : '')} onClick={startWorkout}>
+      {cur !== 'protection' && cur !== 'assistant' && <button className={'start' + (S.active ? ' rec' : '') + (S.active && cur === 'workout' ? ' on' : '')} onClick={startWorkout}>
         <span className="cir"><Icon name={S.active ? (cur === 'workout' ? 'dumbbell' : 'play') : 'dumbbell'} /></span>
         <span>{S.active ? (cur === 'workout' ? t('Workout') : S.active.editingWorkoutId ? t('Edit workout') : t('Resume')) : t('Start')}</span>
       </button>}
@@ -51,5 +52,9 @@ export default function TabBar({ onStart }) {
       <Tab active={on('library')} icon="list" label={t('Exercises')} onClick={() => nav('/library')} />
       <Tab active={on('nutrition')} icon="nutrition" label={t('Nutrition')} onClick={() => nav('/nutrition')} />
     </nav>
+    {cur !== 'assistant' && cur !== 'protection' && !cur.startsWith('coach') && <button className="ritm-assistant-launcher" onClick={() => nav('/assistant')} aria-label={t('Open assistant')} title={t('Open assistant')}>
+      <span className="ritm-assistant-orb" aria-hidden="true" /><span className="ritm-assistant-launcher-label">AI</span>
+    </button>}
+    </div>
   )
 }

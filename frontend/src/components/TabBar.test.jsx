@@ -7,9 +7,10 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TabBar from './TabBar.jsx'
 import { DEF, useStore } from '../store/useStore.js'
+const nav = vi.fn()
 
 vi.mock('react-router-dom', () => ({
-  useNavigate: () => () => {},
+  useNavigate: () => nav,
   useLocation: () => ({ pathname: '/home' }),
 }))
 
@@ -18,6 +19,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 let host, root, originalS, originalUser
 
 beforeEach(() => {
+  nav.mockClear()
   const store = useStore.getState()
   originalS = store.S
   originalUser = store.user
@@ -36,6 +38,13 @@ afterEach(() => {
 const tabs = () => [...host.querySelectorAll('#tabbar button')]
 
 describe('the tab bar across a store write', () => {
+  it('opens the built-in assistant without requiring an enabled provider', () => {
+    act(() => root.render(<TabBar onStart={() => {}} />))
+    const entry = host.querySelector('button[aria-label="Open assistant"]')
+    expect(entry).toBeTruthy()
+    act(() => entry.click())
+    expect(nav).toHaveBeenCalledWith('/assistant')
+  })
   it('keeps the very same buttons instead of rebuilding them every tick', () => {
     act(() => { root.render(<TabBar onStart={() => {}} />) })
     const before = tabs()

@@ -43,6 +43,14 @@ const mount = () => act(() => root.render(<Home />))
 const door = () => [...host.querySelectorAll('button')].find(b => b.textContent.includes('Choose a different workout'))
 
 describe('Home — the way to the Start screen when a plan already owns today', () => {
+  it('offers the assistant on the first day even with no configured AI provider', () => {
+    setS({ routines: [], week: {}, coach: null }); mount()
+    const assistant = [...host.querySelectorAll('button')].find(b => b.textContent.includes('Open assistant'))
+    expect(assistant).toBeTruthy()
+    act(() => assistant.click())
+    expect(nav).toHaveBeenCalledWith('/assistant')
+    expect(startFlow).not.toHaveBeenCalled()
+  })
   it('the new primary action starts the planned session exactly once', () => {
     setS(); mount()
     const action = [...host.querySelectorAll('button')].find(button => button.textContent === 'Start workout')
