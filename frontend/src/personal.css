@@ -78,3 +78,29 @@
 .ritm-achievement small { display: block; font-size: 10px; color: var(--label-2); margin-top: 7px; }
 @media (min-width: 650px) { .ritm-goal-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .ritm-achievement-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 380px) { .ritm-personal-progress .card { padding: 16px; } .ritm-achievement-grid, .ritm-goal-grid, .ritm-goal-editor { gap: 8px; } .ritm-achievement { padding: 12px; } }
+.ritm-weekly-cloud { background: radial-gradient(ellipse at 100% 0, var(--acc-soft), transparent 65%), var(--surface); }
+.ritm-weekly-heading { display: flex; align-items: center; gap: 14px; }
+.ritm-weekly-heading h2 { margin: 3px 0; }
+.ritm-weekly-heading p { margin: 4px 0; }
+.ritm-weekly-icon { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 16px; color: var(--acc); background: var(--acc-soft); border: 1px solid var(--sep-op); }
+.ritm-weekly-icon svg { width: 24px; height: 24px; }
+.ritm-weekly-summary { display: flex; flex-wrap: wrap; gap: 7px; }
+.ritm-weekly-summary span { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--sep-op); font-size: 11px; }
+.ritm-weekly-summary b { font-size: 18px; margin-inline-end: 5px; }
+.ritm-weekly-consent { display: flex; gap: 14px; align-items: center; font-size: 13px; line-height: 1.5; }
+.ritm-weekly ul { padding-inline-start: 22px; line-height: 1.6; }
+.ritm-weekly-text { white-space: pre-wrap; line-height: 1.65; margin: 0; }
+.ritm-weekly-limitations { padding: 14px 16px; background: var(--surface-2); border-inline-start: 3px solid var(--yellow); border-radius: 12px; font-size: 12px; line-height: 1.6; }
+.ritm-weekly-limitations ul { margin-block-end: 0; }
+.ritm-weekly-change, .ritm-weekly-next { padding: 16px; border: 1px solid var(--sep-op); border-radius: 16px; background: var(--surface-2); overflow-wrap: anywhere; }
+.ritm-weekly-change-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.ritm-weekly-change-top > div { flex: 1; min-width: 120px; }
+.ritm-weekly-change-top h3 { margin: 3px 0; font-size: 15px; }
+.ritm-weekly-change-top small, .ritm-weekly-change details { font-size: 11px; color: var(--label-2); }
+.ritm-weekly-change-top strong { font-size: 20px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ritm-weekly-change-top strong span { color: var(--acc); margin-inline: 4px; }
+.ritm-weekly-change p { font-size: 13px; line-height: 1.6; margin: 12px 0; }
+.ritm-weekly-next p { font-size: 12px; line-height: 1.7; margin: 12px 0 0; }
+.ritm-weekly-next strong { font-variant-numeric: tabular-nums; color: var(--acc); }
+.ritm-weekly-journal { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-top: var(--hair) solid var(--sep); padding-top: 14px; }
+.ritm-weekly-journal > div { flex: 1; min-width: 160px; }

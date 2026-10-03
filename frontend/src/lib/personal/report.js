@@ -5,6 +5,8 @@ import { PERSONAL_RECORDS } from './state.js'
 import { eventTime, validDate, shiftDate, datesBetween } from './time.js'
 import { selectedHealthDaily } from './health.js'
 import { calculatePersonalProgress, reconcileAwards } from './progress.js'
+import { planFingerprint } from './plan.js'
+import { loadOfWorkouts } from '../muscles.js'
 export { shiftDate, datesBetween } from './time.js'
 
 export const ANALYSIS_FORMAT = 'opengym-personal-analysis'
@@ -31,7 +33,7 @@ const safeCfg = obj => {
   return result
 }
 function safeEntry(entry) {
-  return { ...pick(entry, ['id', 'rid', 'noProg', 'topW', 'sg', 'note', 'notePin']),
+  return { ...pick(entry, ['id', 'rid', 'noProg', 'topW', 'sg', 'note', 'notePin', 'personalOverrideIds']),
     target: entry.target ? safeCfg(entry.target) : null, planned: entry.planned ? safeCfg(entry.planned) : null,
     sets: (entry.sets || []).map(safeSet) }
 }
@@ -68,11 +70,13 @@ function safeHealth(health, inWindow) {
   }
 }
 function safeChange(change) {
-  return pick(change, ['id', 'type', 'routineId', 'exerciseId', 'field', 'value', 'before', 'after', 'reason', 'unit'])
+  return pick(change, ['id', 'type', 'routineId', 'exerciseId', 'field', 'value', 'before', 'after', 'reason', 'unit', 'evidence'])
 }
 function safeReview(review) {
-  return { ...pick(review, [...META, 'profileId', 'analysisHash', 'planHash', 'title', 'reason', 'status', 'appliedAt', 'undoneAt', 'selectedIds']),
-    changes: (review.changes || []).map(safeChange) }
+  return { ...pick(review, [...META, 'format', 'formatVersion', 'generatedAt', 'profileId', 'analysisHash', 'planHash', 'title', 'summary', 'limitations', 'reason', 'status', 'appliedAt', 'undoneAt', 'selectedIds', 'unit', 'targetExisted']),
+    author: pick(review.author, ['type', 'provider', 'model']),
+    window: pick(review.window, ['from', 'to', 'contextFrom']), before: (review.before || []).map(b => pick(b, ['changeId', 'present', 'value'])),
+    changes: (review.changes || []).map(safeChange), priorOverrides: (review.priorOverrides || []).map(o => pick(o, [...META, 'routineId', 'exerciseId', 'field', 'value', 'unit', 'reviewId', 'baseHash', 'appliedAt'])) }
 }
 export function stateWatermark(state) {
   let watermark = Math.max(finite(state?._ts) ?? 0, finite(state?.personalProfile?.updatedAt) ?? 0, finite(state?.health?.status?.updatedAt) ?? 0)
@@ -119,12 +123,12 @@ export function buildAnalysis(state, { from, to, now = Date.now(), timezone } = 
       bodyweight: live(state.bodyweight).filter(inWindow).map(item => pick(item, ['d', 'w', 't'])), health,
       goals: live(state.progressGoals?.goals).map(goal => pick(goal, [...META, 'type', 'name', 'value', 'unit', 'from', 'to'])),
       awards: reconcileAwards(state.progressGoals?.awards, progress, { now, historicalImport: true }).map(award => pick(award, [...META, 'kind', 'ruleVersion', 'firstAwardedAt', 'qualified', 'notifiedAt'])),
-      weeklyReviews: { proposals: (state.weeklyReviews?.proposals || []).map(safeReview), journal: (state.weeklyReviews?.journal || []).map(safeReview), overrides: live(state.weeklyReviews?.overrides).map(item => ({ ...pick(item, [...META, 'routineId', 'exerciseId', 'field', 'value', 'unit', 'reviewId']), })) },
+      weeklyReviews: { proposals: (state.weeklyReviews?.proposals || []).map(safeReview), journal: (state.weeklyReviews?.journal || []).map(safeReview), overrides: live(state.weeklyReviews?.overrides).map(item => ({ ...pick(item, [...META, 'routineId', 'exerciseId', 'field', 'value', 'unit', 'reviewId', 'baseHash', 'appliedAt']), })) },
     },
-    plan: { routines, week: structuredClone(state.week || {}), dayPlan: structuredClone(state.dayPlan || {}), weekStart: state.weekStart ?? 1,
-      customExercises: (state.customEx || []).map(ex => pick(ex, ['id', 'name', 'bodyPart', 'equipment', 'target', 'secondaryMuscles', 'mode'])),
+    plan: { fingerprint: planFingerprint(state), routines, week: structuredClone(state.week || {}), dayPlan: structuredClone(state.dayPlan || {}), weekStart: state.weekStart ?? 1,
+      customExercises: (state.customEx || []).map(ex => pick(ex, ['id', 'n', 'bp', 'eq', 'tg', 'sm', 'name', 'bodyPart', 'equipment', 'target', 'secondaryMuscles', 'mode'])),
       nextSessions: live(state.routines).map(routine => ({ routineId: routine.id, entries: buildSessionEntries(state, routine).map(safeEntry) })) },
-    summaries: { workouts: { count: selected.length, volume: selected.reduce((sum, workout) => sum + workoutVolume(workout), 0), durationMs: selected.reduce((sum, workout) => sum + workoutDuration(workout), 0) }, nutrition: dailyFood, health: dailyHealth, progress },
+    summaries: { workouts: { count: selected.length, volume: selected.reduce((sum, workout) => sum + workoutVolume(workout), 0), durationMs: selected.reduce((sum, workout) => sum + workoutDuration(workout), 0) }, muscleLoad: loadOfWorkouts(selected), nutrition: dailyFood, health: dailyHealth, progress },
     quality: { incompleteFoodDays: dailyFood.filter(day => !day.complete).length, missingHealthDays: dailyHealth.filter(day => !day.observed).length,
       lastHealthSyncAt: finite(state.health?.status?.lastSyncAt), offWrist: 'unknown', oldSetTimesUnknown: workouts.some(w => w.entries?.some(e => e.sets?.some(row => row.done && row.completedAt == null))),
       energyRule: 'totalKcal and activeKcal are separate; never added to each other or workout estimates' },

@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { t } from '../lib/i18n.js'
 import { todayISO } from '../lib/format.js'
-import { MOBILE, shareExport } from '../lib/mobile.js'
+import { MOBILE, shareExport, readJsonFile } from '../lib/mobile.js'
 import { buildAnalysis, renderAnalysisMarkdown, shiftDate } from '../lib/personal/report.js'
-import { createExchangeSnapshot, writePrivateAnalysis } from '../lib/personal/exchange.js'
+import { createExchangeSnapshot, writePrivateAnalysis, verifyExchangeSnapshot } from '../lib/personal/exchange.js'
 import { preparePersonalExport } from '../lib/personal/health-native.js'
 import { Button, TextField } from '../components/ui.jsx'
 import '../personal.css'
+import WeeklyReview from './WeeklyReview.jsx'
 
 export default function AnalysisExport() {
   const nav = useNavigate()
@@ -17,6 +18,14 @@ export default function AnalysisExport() {
   const [snapshot, setSnapshot] = useState(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  useEffect(() => {
+    let mounted = true
+    if (MOBILE) readJsonFile('personal-exchange/analysis.json').then(async saved => {
+      if (!saved) return
+      try { await verifyExchangeSnapshot(saved, { profileId: useStore.getState().S.personalProfile?.id }); if (mounted) { setSnapshot(saved); setFrom(saved.payload.window.from); setTo(saved.payload.window.to) } } catch { /* prepare again */ }
+    })
+    return () => { mounted = false }
+  }, [])
   async function generate() {
     setBusy(true); setMessage('')
     try {
@@ -54,6 +63,7 @@ export default function AnalysisExport() {
       <Button variant="primary" busy={busy} onClick={generate}>{busy ? t('Preparing report…') : t('Prepare report')}</Button>
     </div>
     {message && <p role="status" className="personal-panel">{message}</p>}
+    {snapshot && <WeeklyReview key={snapshot.checksum} snapshot={snapshot} />}
     {snapshot && <div className="personal-panel personal-stack">
       <h2>{t('Report ready')}</h2>
       <p>{new Date(snapshot.generatedAt).toLocaleString()} · {snapshot.payload.summaries.workouts.count} {t('Workouts')}</p>

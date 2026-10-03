@@ -7,6 +7,7 @@ import { buildSets, applyIntensifierPlan, modeOf } from './history.js'
 import { isWarmupRow } from './workout-model.js'
 import { nextPrescription, applyPrescription, defaultIncrement, weightIncrement, plannedOf } from './progression.js'
 import { dropGrid } from './plates.js'
+import { pendingExerciseOverrides } from './personal/overrides.js'
 
 /**
  * Where a planned session's reps come from (Settings → During a workout). 'plan', the default:
@@ -27,7 +28,9 @@ export const startsFromLast = st => st?.startFrom === 'last'
  */
 export function buildPlannedEntry(st, cfg, routine, { noProg = false } = {}) {
   // `plan` is kept on the entry purely so the workout can explain the number it chose.
-  const plan = noProg ? { policy: 'off', kind: 'off' } : nextPrescription(st, cfg, routine)
+  let plan = noProg ? { policy: 'off', kind: 'off' } : nextPrescription(st, cfg, routine)
+  const overrides = pendingExerciseOverrides(st, cfg, routine)
+  if (overrides.length) plan = { ...plan, kind: 'hold', ...Object.fromEntries(overrides.map(o => [o.field, o.value])), why: ['Accepted weekly recommendation'] }
   // The warm-up ramp and the prescription snap to the exercise's own increment (1.25 kg
   // plates exist), not the unit default; a timed exercise's `inc` is seconds, so it keeps the
   // default for its optional load.
@@ -47,7 +50,7 @@ export function buildPlannedEntry(st, cfg, routine, { noProg = false } = {}) {
     && rows.some(s => !isWarmupRow(s) && s.r !== cfg.reps)
   // `planned` is what the routine asked for, kept apart from the target the prescription moved,
   // so the next session can tell an edited plan from a progressed one (nextPrescription).
-  return { target, plan, sets, planned: plannedOf(cfg), ...(carried ? { carried: true } : {}) }
+  return { target, plan, sets, planned: plannedOf(cfg), ...(carried ? { carried: true } : {}), ...(overrides.length ? { personalOverrideIds: overrides.map(o => o.id) } : {}) }
 }
 
 /**

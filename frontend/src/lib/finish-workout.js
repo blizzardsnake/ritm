@@ -45,6 +45,7 @@ export function buildCompletedWorkout(active, { end = Date.now(), prs = [], snap
       // What the routine asked for when the session was built (session-start.js), next to the
       // target the prescription moved — how the next session tells an edited plan (#275).
       ...(entry.planned ? { planned: entry.planned } : {}),
+      ...(entry.personalOverrideIds ? { personalOverrideIds: [...entry.personalOverrideIds] } : {}),
       // The superset the exercise was done in, so the history can show the pairing. Without it
       // the workout forgot at finish what it had been all session.
       ...(entry.sg ? { sg: entry.sg } : {}),

@@ -182,6 +182,7 @@ function Shell() {
               <Route path="/home" element={<Home />} />
               <Route path="/nutrition" element={<Nutrition />} />
               <Route path="/analysis" element={<AnalysisExport />} />
+              <Route path="/weekly" element={<AnalysisExport />} />
               <Route path="/health" element={<PersonalHealth />} />
               {/* Gym check-in — switched off in Settings, the route falls through to the
                   catch-all redirect below. */}

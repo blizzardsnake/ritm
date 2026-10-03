@@ -2,13 +2,9 @@ import { ANALYSIS_FORMAT, ANALYSIS_VERSION } from './report.js'
 import { personalId } from './state.js'
 import { validDate } from './time.js'
 import { sha256Hex } from '../sha256.js'
+import { canonicalJson } from './plan.js'
+export { canonicalJson } from './plan.js'
 
-export function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`
-  if (value && typeof value === 'object') return `{${Object.keys(value).filter(key => value[key] !== undefined).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`
-  if (typeof value === 'number' && !Number.isFinite(value)) throw new Error('Nonfinite value')
-  return JSON.stringify(value)
-}
 export async function sha256(value) {
   const bytes = new TextEncoder().encode(typeof value === 'string' ? value : canonicalJson(value))
   return sha256Hex(bytes)

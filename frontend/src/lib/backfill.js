@@ -34,7 +34,7 @@ export function historyAsOf(S, { d, start = 0, replaceId = null, strict = false 
   const filedBefore = w => (w.d || '') < d || ((w.d || '') === d && sameDayBefore(w))
   const workouts = (S.workouts || []).filter(w => filedBefore(w) && !(replaceId != null && w.id === replaceId))
   const exWeights = Object.fromEntries(Object.entries(S.exWeights || {}).filter(([, kept]) => !kept?.d || kept.d <= d))
-  return { ...S, workouts, exWeights }
+  return { ...S, workouts, exWeights, personalSessionAt: start }
 }
 
 // The history the running session is built from and held against: as of its own day while it is
