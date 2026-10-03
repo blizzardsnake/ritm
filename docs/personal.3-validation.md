@@ -1,0 +1,14 @@
+# RITM personal.3 — verification, 2026-10-03
+
+- Frontend final OpenRouter run: 291 suites passed, 3353 tests passed, 2 legacy live tests skipped. Earlier opted-in Pollinations probes passed 2/2 with synthetic data, but did not cover the later truncated seven-day owner program and do not validate OpenRouter.
+- API adapters: 28/28 Node tests passed. The historical six Windows failures elsewhere in the API are not described as fixed.
+- Mobile Vite build and Capacitor Android sync passed. Gradle release/debug builds and all 16 Android JUnit tests passed, including personal release URL, redirect and identity policy.
+- APK: `local.opengym.personal`, versionCode 10003, versionName `1.3.9-personal.3`, minSdk 26. Signature v2/v3 verified against the previous personal certificate.
+- Signing certificate SHA256: `ac787bac688d73262907d696c2c410382f88d52155d0a634d3389d14a0d8ac44`.
+- APK SHA256: `109302151e6bcaf1e260ce51ee0112ba6092c8466aa543f272ebb94bd392326a`, 18517495 bytes.
+- Update review: wrong consent recipient, cancellation timing and publisher trusting config metadata repaired. Cancellation and consent regressions passed 44 focused tests. A real old signed APK renamed to personal.3 is rejected before GitHub access; the final personal.3 passes package/version/minSdk/signature checks.
+- OpenRouter review: shared device write queue, preserved explicit server mode, required fresh auth after anonymous migration and fail-closed durable key replacement all repaired and re-reviewed. Tests demonstrate that failed native key write/readback or failed settings write cannot enable the new provider with the old key. Previous provider training consent resets before enabling the securely saved connection.
+- Browser: an isolated localhost preview displayed OpenRouter login with 50/day and 200/seven-day budget, and clicking sign-in displayed the one-time code field. No owner records were used. The owner registration page remains open; personal sign-in and terms acceptance have not completed. Screenshots recorded in the delivery folder. Updates and Creators previously verified in Russian at 393×873. Android-only installation is labelled in the browser preview.
+- Final mobile Vite build, seven-plugin Capacitor sync and Gradle release/debug/unit-test build passed. Native tests: 16, failures/errors: 0. A Windows locked preview module interrupted an initial npm ci; dependencies were restored, unrelated optional-platform lock entries retained and the final build rerun successfully.
+
+Native download/permission/installer behavior is implemented and compiled, but not executed on the owner's Redmi. Real owner OpenRouter sign-in, authorization-code exchange and a seven-day program, upgrade preservation, permission denial, installer cancellation, API 26 runtime, Mi Fitness source coverage and diary AI acceptance remain checks. This release does not claim silent Android installation, completed account creation or a permanent AI conversation memory.

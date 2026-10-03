@@ -1,6 +1,8 @@
 import { loadCoachDevice, saveCoachDevice } from '../coach-device.js'
 import { getApiKey } from '../coach-secrets.js'
 import { nativeFetch } from '../capacitor-fetch.js'
+import { isBuiltinAI } from '../../../../api/coach/core/providers.js'
+import { budgetedFreeFetch, freeAIQuota } from './free-ai-budget.js'
 import { todayISO } from '../format.js'
 import { EXIDX } from '../exercises.js'
 import { summarizeHealthDay } from './health.js'
@@ -12,6 +14,16 @@ import { planFingerprint, validateProposal, PROPOSAL_FORMAT } from './proposal.j
 const destination = settings => ({ provider: settings?.provider, baseUrl: settings?.baseUrl, model: settings?.model, freeOnly: settings?.freeOnly === true })
 export const weeklyConsent = settings => ({ version: 1, destinationHash: fingerprint(destination(settings)) })
 let running = false
+
+// Missing days can span the whole context window. Keep their dates explicitly,
+// without repeating the same large empty measurement object for every day.
+export function compactWeeklyPayload(payload) {
+  const recovery = payload.history.recovery
+  const observed = day => [day.steps, day.distanceM, day.activeKcal, day.totalKcal, day.sleep?.intervalMinutes, day.heartRate?.mean].some(value => value != null)
+    || (day.activities?.length || 0) > 0
+  return { ...payload, history: { ...payload.history, recovery: recovery.filter(observed) },
+    quality: { ...payload.quality, recoveryMissingDates: recovery.filter(day => !observed(day)).map(day => day.date) } }
+}
 
 export function createWeeklyPayload(state, snapshot, { note = '', language = 'ru' } = {}) {
   const report = snapshot.payload
@@ -43,6 +55,7 @@ export function weeklyPrompt(payload) {
     'Your role is to suggest future adjustments, never to claim that you applied them. No diagnosis, treatment or prescription of drugs.',
     'Use actual completed working sets and effort. Muscle load is the original weighted set calculation, not kg lifted. Compare context weeks when available.',
     'Unknown values are unknown, not zero. A partial food day is a partial sum, not daily intake; averages use only marked complete days with all nutrients known.',
+    'Dates in quality.recoveryMissingDates have no observed measurements; they are unknown, never zero.',
     'Sleep duration without complete stages is an interval, not confirmed asleep time. Wrist-wear state is unknown. Watch total and active kcal are separate; never add them or automatically eat back exercise calories.',
     'When goals, limitations or sufficient history are missing, describe the missing evidence in limitations and ask in summary. changes may be empty. Do not invent data or create unsupported changes.',
     'Each change must have a unique id, type, field, numeric value, unit, reason and evidence (one or more string references to paths/record IDs in this report).',
@@ -60,25 +73,28 @@ export async function requestWeeklyReview(state, snapshot, { consent, note = '',
   const abort = () => ctl?.abort()
   try {
     const settings = await loadCoachDevice()
-    if (settings.mode !== 'byok' || settings.provider !== 'compatible' || settings.freeOnly !== true
-      || settings.baseUrl !== 'https://openrouter.ai/api' || !(settings.model === 'openrouter/free' || /^[^\s]+:free$/.test(settings.model || ''))) throw new Error('Подключите бесплатный OpenRouter в настройках ИИ')
+    const builtin = isBuiltinAI(settings)
+    if (!builtin && (settings.mode !== 'byok' || settings.provider !== 'compatible' || settings.freeOnly !== true
+      || settings.baseUrl !== 'https://openrouter.ai/api' || !(settings.model === 'openrouter/free' || /^[^\s]+:free$/.test(settings.model || '')))) throw new Error('Подключите встроенный ИИ или бесплатный OpenRouter в настройках ИИ')
     if (consent?.version !== 1 || consent.destinationHash !== weeklyConsent(settings).destinationHash) throw new Error('Подтвердите отправку этих данных выбранному сервису')
     await verifyExchangeSnapshot(snapshot, { profileId: state.personalProfile?.id })
     const payload = createWeeklyPayload(state, snapshot, { note, language })
     if (JSON.stringify(payload).length > 512 * 1024 || datesBetween(payload.window.from, payload.window.to).length > 31) throw new Error('Для ИИ выберите период до 31 дня или используйте ручную выгрузку')
+    if (!builtin && settings.requiresOpenRouterAuth) throw new Error('Войдите в OpenRouter для подключения ИИ')
     key = await getApiKey()
-    if (!key) throw new Error('Сначала сохраните свой ключ OpenRouter')
+    if (!builtin && !key) throw new Error('Сначала сохраните свой ключ OpenRouter')
     const today = todayISO(), used = settings.daily?.d === today ? settings.daily.n || 0 : 0
-    if (used >= 10) throw new Error('Достигнут дневной лимит разборов на этом телефоне')
+    const quota = builtin ? null : await freeAIQuota()
+    if (builtin ? used >= 10 : quota.used >= quota.limit || quota.weeklyUsed >= quota.weeklyLimit) throw new Error('Достигнут лимит бесплатных запросов на этом телефоне')
     if (signal?.aborted) throw new Error('Разбор отменён')
-    await saveCoachDevice({ daily: { d: today, n: used + 1 } })
-    const { default: compatible } = await import('../../../../api/coach/core/adapters/compatible.js')
+    if (builtin) await saveCoachDevice({ daily: { d: today, n: used + 1 } })
+    const { default: adapter } = builtin ? await import('../../../../api/coach/core/adapters/pollinations.js') : await import('../../../../api/coach/core/adapters/compatible.js')
     ctl = new AbortController(); signal?.addEventListener('abort', abort, { once: true })
     timer = setTimeout(abort, 5 * 60000)
     onStage('analysing')
-    const answer = await compatible.invoke({ cfg: { provider: 'compatible', providerOptions: { compatible: { baseUrl: settings.baseUrl, freeOnly: true } } },
-      env: { OPENAI_COMPAT_API_KEY: key }, model: settings.model, prompt: weeklyPrompt(payload),
-      fetch: fetchImpl, signal: ctl.signal, timeoutMs: 5 * 60000 })
+    const answer = await adapter.invoke({ cfg: builtin ? { provider: 'pollinations' } : { provider: 'compatible', providerOptions: { compatible: { baseUrl: settings.baseUrl, freeOnly: true } } },
+      env: builtin ? {} : { OPENAI_COMPAT_API_KEY: key }, model: settings.model || (builtin ? 'openai-fast' : 'openrouter/free'), prompt: weeklyPrompt(builtin ? compactWeeklyPayload(payload) : payload),
+      fetch: builtin ? fetchImpl : budgetedFreeFetch(fetchImpl), signal: ctl.signal, timeoutMs: 5 * 60000 })
     if (ctl.signal.aborted) throw new Error('Разбор отменён или превышено время ожидания')
     if (answer.code !== 0) throw new Error(answer.stderr || 'Сервис не вернул ответ')
     onStage('validating')

@@ -141,7 +141,7 @@ describe('CoachSetup — free cloud on this phone', () => {
     await click(btn('List models')); await settle()
     expect(localModels).toHaveBeenCalledWith({ provider: 'compatible', baseUrl: 'https://openrouter.ai/api', freeOnly: true }, 'fake-test-key')
     await click(btn('Save and use the Coach')); await settle()
-    expect(mocks.setCoachLocal).toHaveBeenCalledWith({ mode: 'byok', provider: 'compatible', model: 'openrouter/free', baseUrl: 'https://openrouter.ai/api', freeOnly: true })
+    expect(mocks.setCoachLocal).toHaveBeenCalledWith({ mode: 'byok', provider: 'compatible', model: 'openrouter/free', baseUrl: 'https://openrouter.ai/api', freeOnly: true, requiresOpenRouterAuth:false })
   })
 })
 

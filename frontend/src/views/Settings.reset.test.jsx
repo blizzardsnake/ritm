@@ -153,10 +153,11 @@ describe('Settings — reset everything', () => {
   })
 })
 
-describe('Settings — footer', () => {
-  it('links the source code to its home on GitHub', () => {
+describe('Settings — project rows', () => {
+  it('moves source attribution into the separate Creators page', () => {
     mount()
-    const link = [...host.querySelectorAll('a')].find(a => a.textContent === 'source code')
-    expect(link.getAttribute('href')).toBe('https://github.com/DuarteSantos8/openGym')
+    expect([...host.querySelectorAll('.lrow')].some(row => row.textContent.includes('Creators'))).toBe(true)
+    expect([...host.querySelectorAll('a')].find(a => a.textContent === 'source code')).toBeUndefined()
+    expect(host.textContent).not.toContain('exercise images and animations')
   })
 })

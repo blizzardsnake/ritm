@@ -21,6 +21,7 @@ import { HTTP_PROVIDERS, HTTP_PROVIDER_IDS, baseUrlFor, validateBaseUrl, OPENROU
 import { DATA_CATEGORIES } from '../../../api/coach/core/categories.js'
 import { ConnectSheet } from './MobileOnboarding.jsx'
 import Icon from '../components/Icon.jsx'
+import FreeAIConnect from '../components/FreeAIConnect.jsx'
 import { Section, Row, Button, TextField } from '../components/ui.jsx'
 
 const STEPS = ['Loading the exercise catalogue…', 'Checking the endpoint…', 'Ready']
@@ -64,7 +65,7 @@ export default function CoachSetup({ embedded = false, initialFree = false }) {
   const meta = HTTP_PROVIDERS[provider] || {}
   const host = hostOf(baseUrlFor(provider, { providerOptions: { [provider]: { baseUrl } } }))
   const serverHasCoach = !!(user && config?.coach?.enabled)
-  const savedKeyUsable = hasKey && (!freeOnly || coachLocal?.freeOnly === true && coachLocal.provider === 'compatible' && coachLocal.baseUrl === OPENROUTER_FREE_SETTINGS.baseUrl)
+  const savedKeyUsable = hasKey && (!freeOnly || !coachLocal?.requiresOpenRouterAuth && coachLocal?.freeOnly === true && coachLocal.provider === 'compatible' && coachLocal.baseUrl === OPENROUTER_FREE_SETTINGS.baseUrl)
   const chooseFree = () => { setChoice('byok'); setProvider(OPENROUTER_FREE_SETTINGS.provider); setBaseUrl(OPENROUTER_FREE_SETTINGS.baseUrl); setFreeOnly(true); setModels(null) }
 
   const useServer = async () => {
@@ -117,11 +118,14 @@ export default function CoachSetup({ embedded = false, initialFree = false }) {
     if (isCleartext(v.value)) return toast(cleartextRefused())
     setBusy(true)
     try {
-      // The mode first, the key second: the settings file is the cheap, reliable write, the
-      // key goes through the platform's secure store, which is the step that can misbehave.
-      // Either way the user hears what happened instead of watching a greyed-out button (#42).
-      await setCoachLocal({ mode: 'byok', provider, model: chosen, baseUrl: meta.baseUrl ? v.value : null, ...(freeOnly || coachLocal?.freeOnly === true ? { freeOnly } : {}) })
-      if (key.trim()) { await setApiKey(key.trim()); setHasKey(true); setKey('') }
+      const settings={ mode: 'byok', provider, model: chosen, baseUrl: meta.baseUrl ? v.value : null, ...(freeOnly || coachLocal?.freeOnly === true ? { freeOnly } : {}) }
+      // Block requests during provider/key replacement, including failed storage writes.
+      if (freeOnly && key.trim()) {
+        await setCoachLocal({...settings,requiresOpenRouterAuth:true})
+        await setApiKey(key.trim(),{requireDurable:true}); setHasKey(true); setKey('')
+      }
+      await setCoachLocal({...settings,...(freeOnly || coachLocal?.requiresOpenRouterAuth ? {requiresOpenRouterAuth:false} : {})})
+      if (!freeOnly && key.trim()) { await setApiKey(key.trim()); setHasKey(true); setKey('') }
       toast(t('The Coach is on'))
       nav('/coach')
     } catch (e) {
@@ -167,7 +171,7 @@ export default function CoachSetup({ embedded = false, initialFree = false }) {
     </div>}
 
     {choice === 'byok' && <>
-      {freeOnly && <div className="card ritm-free-ai-card"><span className="ritm-eyebrow">{t('FREE CLOUD AI')}</span><h2>OpenRouter</h2><p>{t('Only free models. No automatic paid fallback.')}</p><p className="small muted">{t('Free requests have daily limits and availability can change. If a free provider is unavailable, the request stops.')}</p><div className="ritm-ai-links"><a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">{t('Get my OpenRouter key')}</a><a href="https://openrouter.ai/settings/privacy" target="_blank" rel="noopener noreferrer">{t('Provider privacy settings')}</a></div></div>}
+      {freeOnly && <FreeAIConnect onConnected={()=>nav('/coach')} />}
       {!freeOnly &&
       <Section title={t('Provider')}>
         <div className="row" style={{ flexWrap: 'wrap', gap: 7, padding: '8px 12px' }}>
@@ -184,12 +188,12 @@ export default function CoachSetup({ embedded = false, initialFree = false }) {
         </div>
       </Section>}
 
-      <Section title={t('API key')} footer={t('The key is stored in this phone’s secure storage and never leaves it except to call the provider.')}>
+      {provider !== 'pollinations' && <Section title={t('API key')} footer={t('The key is stored in this phone’s secure storage and never leaves it except to call the provider.')}>
         <div style={{ padding: '8px 12px' }}>
           <TextField value={key} type="password" placeholder={savedKeyUsable ? '••••••••  ' + t('(saved)') : freeOnly ? 'sk-or-…' : (meta.keyPlaceholder || 'sk-…')} autoCapitalize="none" autoCorrect="off"
             onChange={e => setKey(e.target.value)} />
         </div>
-      </Section>
+      </Section>}
 
       <details className="ritm-assistant-data" open={embedded ? undefined : true}>
       <summary>{t('What leaves this phone')}</summary>
@@ -201,7 +205,7 @@ export default function CoachSetup({ embedded = false, initialFree = false }) {
       </Section>
       </details>
       <p className="sect-f" style={{ marginTop: -18, marginBottom: 22, lineHeight: 1.5 }}>
-        {freeOnly ? t('Requests go to OpenRouter and its selected model provider. RITM requests providers that do not collect data; review OpenRouter privacy settings before use.') : t('Each request goes straight to {0} with your key — nobody else sees it, and you pay for it.', host || meta.label)}
+        {provider === 'pollinations' ? t('Built-in free AI · Pollinations. No key needed. Requests go to this service only when you ask. Availability and free limits can change.') : freeOnly ? t('Requests go to OpenRouter and its selected model provider. RITM requests providers that do not collect data; review OpenRouter privacy settings before use.') : t('Each request goes straight to {0} with your key — nobody else sees it, and you pay for it.', host || meta.label)}
       </p>
 
       {step >= 0 && <div className="card">

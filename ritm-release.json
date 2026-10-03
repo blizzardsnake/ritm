@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "repository": "blizzardsnake/ritm",
+  "applicationId": "local.opengym.personal",
+  "versionCode": 10003,
+  "versionName": "1.3.9-personal.3",
+  "minSdk": 26,
+  "signingCertSha256": "ac787bac688d73262907d696c2c410382f88d52155d0a634d3389d14a0d8ac44"
+}

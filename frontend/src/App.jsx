@@ -49,6 +49,10 @@ import CoachChat from './views/CoachChat.jsx'
 import CoachIntake from './views/CoachIntake.jsx'
 import CoachSetup from './views/CoachSetup.jsx'
 import Assistant from './views/Assistant.jsx'
+import PersonalUpdates from './views/PersonalUpdates.jsx'
+import Creators from './views/Creators.jsx'
+import PersonalUpdateBanner from './components/PersonalUpdateBanner.jsx'
+import { useUpdateChecks } from './lib/personal/use-updates.js'
 
 // last known scrollY per route, so back-navigation can put the page where it was
 const scrollPositions = new Map()
@@ -74,6 +78,7 @@ function Shell() {
   const navType = useNavigationType()
   const { S, user, ready } = useStore()
   useHealthSync(ready)
+  useUpdateChecks(ready)
   // iOS: whether timer sounds get past the ring/silent switch (Settings → Sounds). Page-level,
   // so it is applied here on load and on change rather than at each beep.
   useEffect(() => { setPlayOnSilent(!!S.soundOnSilent) }, [S.soundOnSilent])
@@ -176,6 +181,7 @@ function Shell() {
     <>
       {/* keyed on the route: a view that throws is contained, and switching tabs
           re-mounts the boundary, so the tab bar is always a way out */}
+      {authed && !needsMobileOnboarding && <PersonalUpdateBanner />}
       <div id="app" className="vfade" key={loc.pathname}>
         <ErrorBoundary>
           {!authed ? <Login /> : needsMobileOnboarding ? <MobileOnboarding /> : (
@@ -197,6 +203,8 @@ function Shell() {
               <Route path="/muscles" element={<Muscles />} />
               <Route path="/structural-balance" element={<StructuralBalance />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/updates" element={<PersonalUpdates />} />
+              <Route path="/creators" element={<Creators />} />
               <Route path="/protection" element={<AppProtection />} />
               {/* The Coach screens gate themselves on the instance config; the routes exist
                   unconditionally so a deep link from a notification lands somewhere sane

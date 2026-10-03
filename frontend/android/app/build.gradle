@@ -1,6 +1,8 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 
+def ritmRelease = new groovy.json.JsonSlurper().parse(file('../../../ritm-release.json'), 'UTF-8')
+
 android {
     namespace "ch.duartesantos.opengym"
     compileSdk rootProject.ext.compileSdkVersion
@@ -8,8 +10,10 @@ android {
         applicationId "local.opengym.personal"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 10002
-        versionName "1.3.9-personal.2"
+        versionCode ritmRelease.versionCode
+        versionName ritmRelease.versionName
+        buildConfigField 'String', 'RITM_REPOSITORY', '"' + ritmRelease.repository + '"'
+        buildConfigField 'String', 'RITM_SIGNER', '"' + ritmRelease.signingCertSha256 + '"'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,6 +21,7 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    buildFeatures { buildConfig true }
     buildTypes {
         release {
             minifyEnabled false

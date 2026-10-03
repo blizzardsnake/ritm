@@ -6,7 +6,7 @@ import { planFingerprint } from './proposal.js'
 const device = vi.hoisted(() => ({ settings: null, key: 'fake-key' }))
 vi.mock('../coach-device.js', () => ({ loadCoachDevice: async () => structuredClone(device.settings), saveCoachDevice: async patch => { Object.assign(device.settings, patch); return device.settings } }))
 vi.mock('../coach-secrets.js', () => ({ getApiKey: async () => device.key }))
-import { createWeeklyPayload, requestWeeklyReview, weeklyConsent } from './weekly.js'
+import { createWeeklyPayload, compactWeeklyPayload, requestWeeklyReview, weeklyConsent } from './weekly.js'
 const now = Date.parse('2026-10-03T12:00:00Z')
 beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(now)
@@ -27,6 +27,25 @@ async function fixture() {
   return { s, snapshot, doc }
 }
 const response = doc => ({ ok: true, status: 200, text: async () => JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(doc) } }] }) })
+
+it('built-in nutrition and training review needs no personal API key and still validates proposals', async () => {
+  const { s, snapshot, doc } = await fixture()
+  device.settings = { mode: 'byok', provider: 'pollinations', model: 'openai-fast', baseUrl: null, freeOnly: false }
+  device.key = null
+  let body
+  const fetch = vi.fn(async (url, init) => { expect(url).toBe('https://text.pollinations.ai/openai'); expect(init.headers.authorization).toBeUndefined(); body = JSON.parse(init.body); return response(doc) })
+  const answer = await requestWeeklyReview(s, snapshot, { consent: weeklyConsent(device.settings), fetch })
+  expect(answer.summary).toBe(doc.summary); expect(body.private).toBe(true)
+  expect(body.messages[1].content).toContain('nutrition')
+})
+
+it('compacts only absent recovery data, preserving measured zero and explicit missing dates', () => {
+  const payload = { quality: { complete: false }, history: { workouts: [], recovery: [{ date: '2026-10-01', steps: null, sleep: {}, heartRate: {}, activities: [] }, { date: '2026-10-02', steps: 0, sleep: {}, heartRate: {}, activities: [] }] } }
+  const compact = compactWeeklyPayload(payload)
+  expect(compact.history.recovery).toEqual([payload.history.recovery[1]])
+  expect(compact.quality.recoveryMissingDates).toEqual(['2026-10-01'])
+  expect(payload.history.recovery).toHaveLength(2)
+})
 
 it('sends the combined observed history and original muscle load, keeping incomplete food and missing sleep explicit and secrets out', async () => {
   const { s, snapshot } = await fixture()
@@ -73,12 +92,12 @@ it('returns a validated suggestion without applying it, with zero-price privacy 
   expect(proposal.changes).toEqual([])
   expect(JSON.stringify(s)).toBe(before)
   expect(bodies).toHaveLength(1)
-  expect(device.settings.daily.n).toBe(1)
+  expect(device.settings.freeUsage).toHaveLength(1)
 })
 it('refuses malformed or foreign AI answers and stops at the daily cap without leaking the key in errors', async () => {
   const { s, snapshot, doc } = await fixture()
   await expect(requestWeeklyReview(s, snapshot, { consent: weeklyConsent(device.settings), fetch: async () => response({ ...doc, profileId: 'other' }) })).rejects.toThrow()
-  device.settings.daily = { d: '2026-10-03', n: 10 }
+  device.settings.freeUsage = Array.from({length:50}, () => Date.now())
   let calls = 0
   await expect(requestWeeklyReview(s, snapshot, { consent: weeklyConsent(device.settings), fetch: async () => { calls++; return response(doc) } })).rejects.toThrow()
   expect(calls).toBe(0)

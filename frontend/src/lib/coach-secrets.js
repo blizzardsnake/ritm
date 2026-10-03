@@ -7,6 +7,7 @@
 // to localStorage by its own admission, and in a test there is no platform at all. In both
 // cases the fallback is a process-local map that forgets on reload, which is the honest
 // behaviour for a place that cannot keep a secret.
+import {Capacitor} from '@capacitor/core'
 const KEY = 'coach.apiKey'
 const memory = new Map()
 
@@ -19,6 +20,7 @@ const memory = new Map()
 // greyed out forever, the key "not saved", the Coach "thinking" without end (issues #42, #58).
 let pluginPromise = null
 function plugin() {
+  if (!Capacitor.isNativePlatform()) return Promise.resolve({store:null})
   if (!pluginPromise) {
     pluginPromise = import('@aparajita/capacitor-secure-storage')
       .then(m => ({ store: m && m.SecureStorage && typeof m.SecureStorage.get === 'function' ? m.SecureStorage : null }))
@@ -43,13 +45,20 @@ export async function getApiKey() {
   }
   return memory.get(KEY) || null
 }
-export async function setApiKey(value) {
+export async function setApiKey(value, {requireDurable=false} = {}) {
   const v = String(value || '').trim()
   if (!v) return clearApiKey()
   const { store: p } = await plugin()
   if (p) {
-    try { await withTimeout(p.set(KEY, v)); memory.delete(KEY); return } catch { /* fall through */ }
+    try {
+      await withTimeout(p.set(KEY, v))
+      if (requireDurable && await withTimeout(p.get(KEY)) !== v) throw new Error('readback failed')
+      memory.delete(KEY); return
+    } catch {
+      if (requireDurable) throw new Error('Could not save the API key securely. Connect again.')
+    }
   }
+  if (requireDurable && Capacitor.isNativePlatform()) throw new Error('Could not save the API key securely. Connect again.')
   memory.set(KEY, v)
 }
 export async function clearApiKey() {

@@ -8,6 +8,7 @@ import { exerciseNameText } from '../lib/format.js'
 import { isWarmupRow } from '../lib/workout-model.js'
 import { applyProposal, previewProposal, validateProposal, saveProposal, undoProposal } from '../lib/personal/proposal.js'
 import { weeklyConsent, requestWeeklyReview } from '../lib/personal/weekly.js'
+import { isBuiltinAI } from '../../../api/coach/core/providers.js'
 import { Button, Switch, TextArea } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 
@@ -24,13 +25,14 @@ export default function WeeklyReview({ snapshot }) {
   const [consented, setConsented] = useState(false), [note, setNote] = useState('')
   const [stage, setStage] = useState(''), [message, setMessage] = useState('')
   const controller = useRef(null), upload = useRef(null), mounted = useRef(true)
-  const configured = MOBILE && settings?.mode === 'byok' && settings?.freeOnly === true
+  const builtin = isBuiltinAI(settings)
+  const configured = MOBILE && (builtin || settings?.mode === 'byok' && settings?.freeOnly === true)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.abort() } }, [])
   useEffect(() => {
     const old = [...(S.weeklyReviews?.proposals || [])].reverse().find(p => !p.deletedAt && p.analysisHash === snapshot.checksum)
     setProposal(old || null); setSelected(old?.changes.map(c => c.id) || []); setConsented(false); setMessage('')
   }, [snapshot.checksum])
-  useEffect(() => setConsented(false), [settings?.model, settings?.baseUrl, settings?.freeOnly, settings?.mode])
+  useEffect(() => setConsented(false), [settings?.provider, settings?.model, settings?.baseUrl, settings?.freeOnly, settings?.mode])
   const applied = S.weeklyReviews?.journal?.find(j => j.id === proposal?.id)
   let preview = null
   try { if (proposal && !applied) preview = previewProposal(S, proposal, selected) } catch { preview = { conflicts: [{ code: 'invalid' }], nextSessions: [], before: [] } }
@@ -45,7 +47,7 @@ export default function WeeklyReview({ snapshot }) {
     try {
       const next = await requestWeeklyReview(structuredClone(useStore.getState().S), snapshot, { consent: consented ? weeklyConsent(settings) : null,
         note, language: getLang(), signal: controller.current.signal, onStage: value => mounted.current && setStage(value) })
-      if (mounted.current) accept(next, { type: 'ai', provider: 'OpenRouter', model: settings.model })
+      if (mounted.current) accept(next, { type: 'ai', provider: builtin ? 'Pollinations' : 'OpenRouter', model: settings.model })
     } catch (error) { if (mounted.current) setMessage(error.message) }
     finally { if (mounted.current) setStage(''); controller.current = null }
   }
@@ -82,7 +84,7 @@ export default function WeeklyReview({ snapshot }) {
       <div className="ritm-weekly-heading"><span className="ritm-weekly-icon"><Icon name="sparkles" /></span><div><h2>{t('Weekly review')}</h2><p className="sub">{t('Training, food and recovery — one picture')}</p></div></div>
       <div className="ritm-weekly-summary"><span><b>{snapshot.payload.summaries.workouts.count}</b> {t('Workouts')}</span><span><b>{snapshot.payload.quality.incompleteFoodDays}</b> {t('Incomplete food days')}</span><span><b>{snapshot.payload.quality.missingHealthDays}</b> {t('Days without activity')}</span></div>
       {configured ? <>
-        <p className="sub">{t('OpenRouter and its model provider receive the data below. Free models only; availability and daily limits apply.')} <b>{settings.model}</b></p>
+        <p className="sub">{t(builtin ? 'Pollinations receives the report below when you request an analysis. Free service; availability and limits apply.' : 'OpenRouter and its model provider receive the data below. Free models only; availability and daily limits apply.')} <b>{settings.model}</b></p>
         <details className="ritm-weekly-disclosure"><summary>{t('What will be sent')}</summary><ul><li>{t('Your current program and completed sets, weights, reps, effort and notes')}</li><li>{t('Food names, portions and notes, daily macros and which days are complete')}</li><li>{t('Body weight and available steps, sleep, energy and recovery summaries from selected sources')}</li><li>{t('Your goals, equipment, limitations and the note below, if you filled them in')}</li></ul></details>
         <label className="personal-stack sub">{t('What should the AI consider?')}<TextArea rows={3} value={note} maxLength={2000} onChange={e => setNote(e.target.value)} placeholder={t('For example: tired this week, want to keep strength')} /></label>
         <div className="ritm-weekly-consent"><Switch data-weekly-consent checked={consented} disabled={busy} onChange={setConsented} aria-label={t('Allow this report to be sent')} /><span>{t('Allow this report to be sent')}</span></div>

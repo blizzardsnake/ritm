@@ -7,7 +7,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
-if (!$OutputApk) { $OutputApk = Join-Path $repoRoot 'artifacts/RITM-1.3.9-personal.2.apk' }
+$release = Get-Content -LiteralPath (Join-Path $repoRoot 'ritm-release.json') -Raw | ConvertFrom-Json
+if (!$OutputApk) { $OutputApk = Join-Path $repoRoot ('artifacts/RITM-' + $release.versionName + '.apk') }
 if (!(Test-Path -LiteralPath "$JdkHome/bin/java.exe") -or !(Test-Path -LiteralPath "$SdkRoot/build-tools/35.0.0/apksigner.bat")) { throw 'Set JDK 21 and Android SDK (platform36, build-tools35.0.0) paths' }
 $recovery = Get-Content -LiteralPath $SigningRecovery -Raw | ConvertFrom-Json
 $keystore = Join-Path (Split-Path -Parent (Resolve-Path -LiteralPath $SigningRecovery)) $recovery.keystore
@@ -28,7 +29,7 @@ try {
     $env:JAVA_TOOL_OPTIONS = "-Dfile.encoding=COMPAT -Djdk.net.unixdomain.tmpdir=$javaTmp"
     Set-Location (Join-Path $repoRoot 'frontend')
     if ($NpmCli) { & node $NpmCli ci } else { & npm.cmd ci }; CheckExit
-    $env:VITE_MOBILE = '1'; $env:APP_BUILD = 'personal.2'
+    $env:VITE_MOBILE = '1'; $env:APP_BUILD = ($release.versionName -replace '^1\.3\.9-', '')
     $env:VITE_IMG_BASE = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/images/'
     $env:VITE_GIF_BASE = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@7455efae41b330c265e7cd4b78dfa848e7ce5ebd/videos/'
     & node node_modules/vite/bin/vite.js build; CheckExit

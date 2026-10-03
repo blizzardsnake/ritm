@@ -10,6 +10,11 @@
  * pointed it at, so the model has to come from what that endpoint actually serves.
  */
 export const HTTP_PROVIDERS = Object.freeze({
+  pollinations: Object.freeze({
+    label: 'Pollinations', runtime: 'HTTPS', http: true, keyOptional: true,
+    apiKeyEnv: null, oauthEnv: null, defaultBase: 'https://text.pollinations.ai',
+    defaultModel: 'openai-fast', builtinFree: true,
+  }),
   anthropic: Object.freeze({
     label: 'Anthropic API', runtime: 'HTTPS', http: true,
     apiKeyEnv: 'ANTHROPIC_API_KEY', oauthEnv: null,
@@ -44,6 +49,10 @@ export const HTTP_PROVIDERS = Object.freeze({
 });
 
 export const HTTP_PROVIDER_IDS = Object.freeze(Object.keys(HTTP_PROVIDERS));
+
+export const BUILTIN_AI_SETTINGS = Object.freeze({ mode: 'byok', provider: 'pollinations', model: 'openai-fast', baseUrl: null, freeOnly: false });
+export const isBuiltinAI = settings => settings?.mode === 'byok' && settings.provider === 'pollinations'
+  && (!settings.baseUrl || settings.baseUrl === 'https://text.pollinations.ai') && (!settings.model || settings.model === 'openai-fast') && settings.freeOnly !== true;
 
 // The compatible transport appends /v1, so the fixed preset base ends at /api.
 export const OPENROUTER_FREE_SETTINGS = Object.freeze({ provider: 'compatible', baseUrl: 'https://openrouter.ai/api', model: 'openrouter/free', freeOnly: true });

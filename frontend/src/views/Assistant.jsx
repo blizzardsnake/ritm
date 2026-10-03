@@ -9,6 +9,7 @@ import { getApiKey } from '../lib/coach-secrets.js'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import CoachSetup from './CoachSetup.jsx'
+import { isBuiltinAI } from '../../../api/coach/core/providers.js'
 
 // Presence is separate from provider readiness: opening the assistant sends no history.
 export default function Assistant() {
@@ -16,14 +17,17 @@ export default function Assistant() {
   const user = useStore(s => s.user)
   const config = useStore(s => s.config)
   const coachLocal = useStore(s => s.coachLocal)
+  const builtin = isBuiltinAI(coachLocal)
   const [keyReady, setKeyReady] = useState(null)
   const connectionRef = useRef(null)
   useEffect(() => {
     let live = true
     setKeyReady(null)
-    getApiKey().then(key => { if (live) setKeyReady(!!key) }).catch(() => { if (live) setKeyReady(false) })
+    if (coachLocal?.freeOnly && coachLocal.requiresOpenRouterAuth) setKeyReady(false)
+    else if (builtin) setKeyReady(true)
+    else getApiKey().then(key => { if (live) setKeyReady(!!key) }).catch(() => { if (live) setKeyReady(false) })
     return () => { live = false }
-  }, [coachLocal])
+  }, [coachLocal, builtin])
   const available = coachAvailable(config, user, { demo: DEMO, mobile: MOBILE, coachMode: coachLocal?.mode })
   const connected = available && (coachLocal?.mode !== 'byok' || keyReady === true)
   const checking = available && coachLocal?.mode === 'byok' && keyReady === null
@@ -43,8 +47,10 @@ export default function Assistant() {
     <div className="ritm-assistant-actions">
       <button onClick={() => nav('/analysis')}><Icon name="chart" /><div><strong>{t('Review my week')}</strong><span>{t('Training + food + sleep. Preview the report before sending.')}</span></div><Icon name="chevronRight" /></button>
       {connected && <button onClick={() => nav('/coach')}><Icon name="sparkles" /><div><strong>{t('Talk about my training')}</strong><span>{t('Build a program, adjust weights or review a workout.')}</span></div><Icon name="chevronRight" /></button>}
+      {connected && <button onClick={() => nav('/analysis')}><Icon name="nutrition" /><div><strong>{t('Review my nutrition')}</strong><span>{t('Food diary, calorie targets and your training together.')}</span></div><Icon name="chevronRight" /></button>}
       <button onClick={() => nav('/health')}><Icon name="heart" /><div><strong>{t('Connect Mi Fitness data')}</strong><span>{t('Choose watch sources in Health Connect.')}</span></div><Icon name="chevronRight" /></button>
     </div>
+    {builtin && <p className="small muted ritm-builtin-disclosure">{t('Built-in free AI · Pollinations. No key needed. Requests go to this service only when you ask. Availability and free limits can change.')}</p>}
     {checking ? <p className="small muted" role="status">{t('Checking connection…')}</p> : !connected ? <section className="ritm-assistant-connect" ref={connectionRef}>
       <div className="ritm-section-heading"><div><h2>{t('One connection. Always at hand.')}</h2><p className="small muted">{t('Paste your free OpenRouter key. It stays on this phone. No computer needed.')}</p></div></div>
       <CoachSetup embedded initialFree />

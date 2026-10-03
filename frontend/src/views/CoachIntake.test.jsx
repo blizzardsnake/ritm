@@ -72,6 +72,13 @@ afterEach(() => { act(() => root.unmount()); host.remove() })
 const mount = () => act(() => root.render(<CoachIntake />))
 const settle = async () => { await act(async () => { await Promise.resolve(); await Promise.resolve() }) }
 
+it('built-in AI consent names Pollinations as the actual free recipient', async () => {
+  vi.mocked(disclosure).mockResolvedValue({ provider: 'pollinations', providerLabel: 'Pollinations', payer: 'free', host: 'text.pollinations.ai' })
+  mount(); await settle()
+  expect(host.textContent).toContain('Sent to Pollinations')
+  expect(host.textContent).not.toContain('Sent to OpenRouter')
+})
+
 const eyebrow = () => host.querySelector('.ob-eyebrow')?.textContent
 const all = sel => [...host.querySelectorAll(sel)]
 const find = (sel, text) => all(sel).find(el => el.textContent.trim().startsWith(text))

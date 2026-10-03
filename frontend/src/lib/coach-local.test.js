@@ -3,7 +3,6 @@
 // the apply engine accepts. Also the three things this mode has to get right on its own: the
 // daily cap, the key never touching S, and a proposal surviving in the device file.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { todayISO } from './format.js'
 
 // The device file and the secret store are in-memory here; nativeFetch is the script.
 const device = { data: null }
@@ -52,6 +51,28 @@ async function settle() {
 }
 
 describe('the Coach on a phone with its own key', () => {
+  it('new personal installs select free OpenRouter and preserve explicit off without making a provider call', async () => {
+    _resetCoachDevice(); device.data = null
+    expect(await loadCoachDevice()).toMatchObject({ mode: 'byok', provider: 'compatible', model: 'openrouter/free', freeOnly: true })
+    expect(wire.calls).toHaveLength(0)
+    await saveCoachDevice({ mode: 'off' }); _resetCoachDevice()
+    expect((await loadCoachDevice()).mode).toBe('off')
+  })
+  it('built-in training review works without a key and reports a free external service', async () => {
+    secret.key = null
+    await saveCoachDevice({ mode: 'byok', provider: 'pollinations', model: 'openai-fast', baseUrl: null, freeOnly: false })
+    expect(await local.localDisclosure()).toMatchObject({ providerLabel: 'Pollinations', payer: 'free', host: 'text.pollinations.ai' })
+    await local.localReview(state()); const result = await settle()
+    expect(result.pending.summary).toBe('One tweak.')
+    expect(wire.calls[0].url).toBe('https://text.pollinations.ai/openai')
+    expect(wire.calls[0].init.headers.authorization).toBeUndefined()
+  })
+  it('does not send a legacy key after migrating from anonymous AI to OpenRouter', async () => {
+    _resetCoachDevice(); device.data={mode:'byok',provider:'pollinations',model:'openai-fast'}
+    expect((await loadCoachDevice()).requiresOpenRouterAuth).toBe(true)
+    await expect(local.localReview(state())).rejects.toMatchObject({code:'connection'})
+    expect(wire.calls).toHaveLength(0)
+  })
   beforeEach(async () => {
     _resetCoachDevice(); local._resetLocal()
     device.data = { mode: 'byok', provider: 'openai', model: 'gpt-t', baseUrl: null }

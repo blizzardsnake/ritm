@@ -27,6 +27,16 @@ const mount = () => act(async () => root.render(<Assistant />))
 const button = text => [...host.querySelectorAll('button')].find(b => b.textContent.includes(text))
 const configured = () => useStore.setState({ coachLocal: { mode: 'byok', provider: 'compatible', baseUrl: 'https://openrouter.ai/api', freeOnly: true, model: 'openrouter/free' } })
 
+it('built-in AI opens training and nutrition with no API-key field or setup request', async () => {
+  useStore.setState({ coachLocal: { mode: 'byok', provider: 'pollinations', model: 'openai-fast' } })
+  await mount()
+  expect(host.querySelector('input[type=password]')).toBeNull()
+  expect(button('Start a conversation')).toBeTruthy()
+  act(() => button('Review my nutrition').click())
+  expect(nav).toHaveBeenCalledWith('/analysis')
+  expect(localModels).not.toHaveBeenCalled()
+})
+
 it('is usable from first launch, opens free setup and lets the owner preview a combined report without an AI key', async () => {
   await mount()
   expect(host.textContent).toContain('Connect free AI once')

@@ -22,6 +22,8 @@ import anthropic from '../../../api/coach/core/adapters/anthropic.js'
 import openai from '../../../api/coach/core/adapters/openai.js'
 import gemini from '../../../api/coach/core/adapters/gemini.js'
 import compatible from '../../../api/coach/core/adapters/compatible.js'
+import pollinations from '../../../api/coach/core/adapters/pollinations.js'
+import { budgetedFreeFetch, freeAIQuota } from './personal/free-ai-budget.js'
 import { nativeFetch } from './capacitor-fetch.js'
 import { getApiKey } from './coach-secrets.js'
 import { loadCoachDevice, saveCoachDevice } from './coach-device.js'
@@ -29,7 +31,7 @@ import { planHash } from './coach.js'
 import { todayISO } from './format.js'
 import { t, getLang } from './i18n.js'
 
-export const ADAPTERS = { anthropic, openai, gemini, compatible }
+export const ADAPTERS = { anthropic, openai, gemini, compatible, pollinations }
 export const LOCAL_DAILY_CAP = 10
 // Five minutes is right for a cloud API and wrong for a model on somebody's laptop; the
 // OpenAI-compatible endpoint is the one that may be local, so it gets the long budget.
@@ -74,6 +76,7 @@ async function handle() {
 
 async function capState() {
   const d = await loadCoachDevice()
+  if (d.freeOnly === true) return freeAIQuota()
   const today = todayISO()
   const used = d.daily && d.daily.d === today ? d.daily.n : 0
   return { used, limit: LOCAL_DAILY_CAP }
@@ -110,7 +113,7 @@ export async function localDisclosure() {
     provider: d.provider, providerLabel: d.freeOnly === true ? 'OpenRouter' : meta.label || t('the configured AI provider'),
     categories: payloadLib.DATA_CATEGORIES, version: 1,
     // The honest difference from the self-hosted flow: it is the user's own account.
-    payer: d.freeOnly === true ? 'free' : 'you', host: hostOf(base), ...(d.freeOnly === true ? { freeOnly: true } : {})
+    payer: d.freeOnly === true || meta.builtinFree ? 'free' : 'you', host: hostOf(base), ...(d.freeOnly === true ? { freeOnly: true } : {})
   }
 }
 
@@ -133,10 +136,11 @@ async function start(S, kind, opts) {
   const adapter = ADAPTERS[d.provider]
   if (d.mode !== 'byok' || !adapter) throw Object.assign(new Error(t('The Coach isn’t set up on this phone.')), { status: 503, code: 'off' })
   if (invalidFreeSetup(d)) throw Object.assign(new Error(t('Only free OpenRouter models are allowed in this mode.')), { status: 400, code: 'free_only' })
+  if (d.freeOnly === true && d.requiresOpenRouterAuth) throw Object.assign(new Error(t('Sign in to OpenRouter')), {status:403,code:'connection'})
   const cap = await capState()
   if (cap.used >= cap.limit) throw Object.assign(new Error(t('The Coach is resting — you have used today’s {0} runs on this phone.', cap.limit)), { status: 429, code: 'cap' })
 
-  await bumpDaily()
+  if (d.freeOnly !== true) await bumpDaily()
   job = { id: 'local-' + Date.now().toString(36), kind, state: 'running', startedAt: Date.now() }
   lastError = null
   // Not awaited: the screens poll, exactly as they do against a server.
@@ -153,7 +157,7 @@ async function run(S, kind, opts, d, adapter) {
   const attempt = await runPipeline({
     adapter, cfg: cfgOf(d), kind, payload,
     model: d.model || HTTP_PROVIDERS[d.provider].defaultModel, timeoutMs: timeoutFor(d.provider),
-    invokeOpts: { env: envOf(d, key), fetch: nativeFetch }
+    invokeOpts: { env: envOf(d, key), fetch: d.freeOnly === true ? budgetedFreeFetch(nativeFetch) : nativeFetch }
   })
   if (!attempt.ok) {
     // There is no admin card on a phone, so the reason has to reach the person holding it:
