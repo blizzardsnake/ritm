@@ -161,6 +161,12 @@ describe('CoachIntake — the consent screen', () => {
     mount(); await settle()
     expect(host.textContent).toContain('Sent to Anthropic, running on this server under the instance owner')
   })
+  it('describes free OpenRouter requests without pretending they run on a server or incur a charge', async () => {
+    vi.mocked(disclosure).mockResolvedValue({ categories: ['plan'], providerLabel: 'OpenRouter', payer: 'free', host: 'openrouter.ai', freeOnly: true })
+    mount(); await settle()
+    expect(host.textContent).toContain('Sent to OpenRouter and its model provider using only free models. Daily limits apply.')
+    expect(host.textContent).not.toContain('you pay for every request')
+  })
 
   it('names the provider when the phone pays but there is no host to name', async () => {
     vi.mocked(disclosure).mockResolvedValue({ categories: ['plan'], providerLabel: 'Anthropic API', payer: 'you' })

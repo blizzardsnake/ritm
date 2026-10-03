@@ -98,6 +98,8 @@ export function httpAdapter(spec) {
       const base = adapter.baseUrl(cfg);
       if (!base) return { ok: false, error: 'no endpoint configured', models: [] };
       const key = keyOf(env);
+      const refused = spec.validateConfig?.({ cfg, key });
+      if (refused) return { ok: false, error: refused, models: [] };
       if (!key && !meta.keyOptional) return { ok: false, error: 'no API key configured', models: [] };
       let res;
       try {
@@ -108,7 +110,7 @@ export function httpAdapter(spec) {
       const { data, text } = await readJson(res);
       if (!res.ok) return { ok: false, error: `${res.status} ${trim(spec.errorMessage(data) || text, 200)}`, models: [] };
       let models;
-      try { models = spec.readModels(data); } catch { models = null; }
+      try { models = spec.readModels(data, { cfg }); } catch { models = null; }
       if (!Array.isArray(models)) return { ok: false, error: 'unexpected model list shape', models: [] };
       return { ok: true, models: models.filter(m => typeof m === 'string' && m).sort() };
     },
@@ -126,8 +128,10 @@ export function httpAdapter(spec) {
       if (!key && !meta.keyOptional) return { code: -1, text: '', stderr: `no API key configured for ${id}`, spawnError: true };
       const chosen = model || meta.defaultModel;
       if (!chosen) return { code: 1, text: '', stderr: `no model chosen for ${id} — pick one from the list the endpoint serves` };
+      const refused = spec.validateConfig?.({ cfg, key, model: chosen });
+      if (refused) return { code: 1, text: '', stderr: refused };
 
-      let body = spec.body({ model: chosen, prompt, system: system || null, schema: schema || null, maxTokens: MAX_OUTPUT_TOKENS });
+      let body = spec.body({ model: chosen, prompt, system: system || null, schema: schema || null, maxTokens: MAX_OUTPUT_TOKENS, cfg });
       let retriedWithoutJsonMode = false;
       let transientRetries = 0;
       for (;;) {

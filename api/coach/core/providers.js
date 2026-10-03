@@ -45,6 +45,10 @@ export const HTTP_PROVIDERS = Object.freeze({
 
 export const HTTP_PROVIDER_IDS = Object.freeze(Object.keys(HTTP_PROVIDERS));
 
+// The compatible transport appends /v1, so the fixed preset base ends at /api.
+export const OPENROUTER_FREE_SETTINGS = Object.freeze({ provider: 'compatible', baseUrl: 'https://openrouter.ai/api', model: 'openrouter/free', freeOnly: true });
+export const isOpenRouterFreeModel = model => typeof model === 'string' && (model === 'openrouter/free' || /^[^\s]+:free$/.test(model));
+
 /** The base URL a provider will actually be called at: the configured override, else the default. */
 export function baseUrlFor(id, cfg) {
   const meta = HTTP_PROVIDERS[id];

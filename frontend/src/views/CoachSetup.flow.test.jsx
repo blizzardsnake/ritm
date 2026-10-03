@@ -97,6 +97,32 @@ const pickModel = value => act(() => {
 })
 const openByok = async () => { await click(rowTitled('Bring my own API key')) }
 
+describe('CoachSetup — free cloud on this phone', () => {
+  it('requires a new key instead of sending the saved key of another provider to OpenRouter', async () => {
+    mocks.coachLocal = { provider: 'anthropic', model: 'old-model', mode: 'byok' }
+    vi.mocked(getApiKey).mockResolvedValue('fake-key-for-another-provider')
+    await mount(); await settle()
+    await click(rowTitled('Free AI on this phone'))
+    expect(field('password').placeholder).toBe('sk-or-…')
+    await click(btn('List models')); await settle()
+    expect(localModels).not.toHaveBeenCalled()
+    expect(mocks.toast).toHaveBeenCalledWith('Enter your API key')
+  })
+  it('offers a named free preset with a fixed endpoint, requires an owner key and saves the paid-fallback guard', async () => {
+    await mount()
+    await click(rowTitled('Free AI on this phone'))
+    expect(host.textContent).toContain('Only free models. No automatic paid fallback.')
+    await click(btn('List models')); await settle()
+    expect(localModels).not.toHaveBeenCalled()
+    await typeIn(field('password'), 'fake-test-key')
+    localModels.mockResolvedValue({ ok: true, models: ['openrouter/free'] })
+    await click(btn('List models')); await settle()
+    expect(localModels).toHaveBeenCalledWith({ provider: 'compatible', baseUrl: 'https://openrouter.ai/api', freeOnly: true }, 'fake-test-key')
+    await click(btn('Save and use the Coach')); await settle()
+    expect(mocks.setCoachLocal).toHaveBeenCalledWith({ mode: 'byok', provider: 'compatible', model: 'openrouter/free', baseUrl: 'https://openrouter.ai/api', freeOnly: true })
+  })
+})
+
 describe('CoachSetup — where it runs at all', () => {
   it('is a phone screen: the web build is sent straight back to Settings', async () => {
     mocks.mobile = false

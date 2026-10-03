@@ -31,7 +31,7 @@ export async function saveCoachDevice(patch) {
   return next
 }
 /** The part of it a UI may show: never the pending proposal, never the handle. */
-export const coachDeviceSettings = d => d ? { mode: d.mode, provider: d.provider, model: d.model, baseUrl: d.baseUrl } : null
+export const coachDeviceSettings = d => d ? { mode: d.mode, provider: d.provider, model: d.model, baseUrl: d.baseUrl, ...(d.freeOnly === true ? { freeOnly: true } : {}) } : null
 
 // Test seam.
 export function _resetCoachDevice() { cache = null }

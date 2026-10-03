@@ -17,7 +17,7 @@
 //     riding into a backup or a sync.
 import * as payloadLib from '../../../api/coach/core/payload.js'
 import { runPipeline } from '../../../api/coach/core/pipeline.js'
-import { HTTP_PROVIDERS, baseUrlFor } from '../../../api/coach/core/providers.js'
+import { HTTP_PROVIDERS, baseUrlFor, OPENROUTER_FREE_SETTINGS, isOpenRouterFreeModel } from '../../../api/coach/core/providers.js'
 import anthropic from '../../../api/coach/core/adapters/anthropic.js'
 import openai from '../../../api/coach/core/adapters/openai.js'
 import gemini from '../../../api/coach/core/adapters/gemini.js'
@@ -50,8 +50,11 @@ export function setNotifier(fn) { notify = fn }
 
 /* ---------- what this phone is configured with ---------- */
 
-const cfgOf = d => ({ provider: d.provider, providerOptions: d.baseUrl ? { [d.provider]: { baseUrl: d.baseUrl } } : {} })
+const cfgOf = d => ({ provider: d.provider, providerOptions: d.baseUrl || d.freeOnly ? { [d.provider]: { baseUrl: d.baseUrl, ...(d.freeOnly === true ? { freeOnly: true } : {}) } } : {} })
 const envOf = (d, key) => (key ? { [HTTP_PROVIDERS[d.provider].apiKeyEnv]: key } : {})
+const invalidFreeSetup = settings => settings.freeOnly === true && (settings.provider !== OPENROUTER_FREE_SETTINGS.provider
+  || baseUrlFor(settings.provider, cfgOf(settings)) !== OPENROUTER_FREE_SETTINGS.baseUrl
+  || settings.model != null && !isOpenRouterFreeModel(settings.model))
 
 function mintHandle() {
   const bytes = new Uint8Array(12)
@@ -104,15 +107,16 @@ export async function localDisclosure() {
   const meta = HTTP_PROVIDERS[d.provider] || {}
   const base = d.provider ? baseUrlFor(d.provider, cfgOf(d)) : ''
   return {
-    provider: d.provider, providerLabel: meta.label || t('the configured AI provider'),
+    provider: d.provider, providerLabel: d.freeOnly === true ? 'OpenRouter' : meta.label || t('the configured AI provider'),
     categories: payloadLib.DATA_CATEGORIES, version: 1,
     // The honest difference from the self-hosted flow: it is the user's own account.
-    payer: 'you', host: hostOf(base)
+    payer: d.freeOnly === true ? 'free' : 'you', host: hostOf(base), ...(d.freeOnly === true ? { freeOnly: true } : {})
   }
 }
 
 /** The models the configured endpoint serves — the setup screen's list, and its reachability test. */
 export async function localModels(settings, key) {
+  if (invalidFreeSetup(settings)) return { ok: false, error: t('Only free OpenRouter models are allowed in this mode.'), models: [] }
   const adapter = ADAPTERS[settings.provider]
   if (!adapter) return { ok: false, error: 'unknown provider', models: [] }
   return adapter.models(cfgOf(settings), envOf(settings, key), { fetch: nativeFetch, timeoutMs: 20000 })
@@ -128,6 +132,7 @@ async function start(S, kind, opts) {
   const d = await loadCoachDevice()
   const adapter = ADAPTERS[d.provider]
   if (d.mode !== 'byok' || !adapter) throw Object.assign(new Error(t('The Coach isn’t set up on this phone.')), { status: 503, code: 'off' })
+  if (invalidFreeSetup(d)) throw Object.assign(new Error(t('Only free OpenRouter models are allowed in this mode.')), { status: 400, code: 'free_only' })
   const cap = await capState()
   if (cap.used >= cap.limit) throw Object.assign(new Error(t('The Coach is resting — you have used today’s {0} runs on this phone.', cap.limit)), { status: 429, code: 'cap' })
 

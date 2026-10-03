@@ -17,7 +17,7 @@ import { t } from '../lib/i18n.js'
 import { MOBILE } from '../lib/mobile.js'
 import { CATEGORY_TEXT } from '../lib/coach.js'
 import { getApiKey, setApiKey, clearApiKey } from '../lib/coach-secrets.js'
-import { HTTP_PROVIDERS, HTTP_PROVIDER_IDS, baseUrlFor, validateBaseUrl } from '../../../api/coach/core/providers.js'
+import { HTTP_PROVIDERS, HTTP_PROVIDER_IDS, baseUrlFor, validateBaseUrl, OPENROUTER_FREE_SETTINGS, isOpenRouterFreeModel } from '../../../api/coach/core/providers.js'
 import { DATA_CATEGORIES } from '../../../api/coach/core/categories.js'
 import { ConnectSheet } from './MobileOnboarding.jsx'
 import Icon from '../components/Icon.jsx'
@@ -48,6 +48,7 @@ export default function CoachSetup() {
   const [provider, setProvider] = useState(coachLocal?.provider || 'anthropic')
   const [baseUrl, setBaseUrl] = useState(coachLocal?.baseUrl || '')
   const [model, setModel] = useState(coachLocal?.model || '')
+  const [freeOnly, setFreeOnly] = useState(coachLocal?.freeOnly === true)
   const [key, setKey] = useState('')
   const [hasKey, setHasKey] = useState(false)
   const [models, setModels] = useState(null)
@@ -58,11 +59,13 @@ export default function CoachSetup() {
   useEffect(() => { getApiKey().then(k => setHasKey(!!k)) }, [])
   // Ask the paired server afresh: the admin may have switched the Coach on since this phone booted.
   useEffect(() => { if (user) refreshConfig() }, [user])
-  useEffect(() => { setModels(null); setModel(coachLocal?.provider === provider ? (coachLocal?.model || '') : '') }, [provider])
+  useEffect(() => { setModels(null); setModel(freeOnly ? OPENROUTER_FREE_SETTINGS.model : coachLocal?.provider === provider ? (coachLocal?.model || '') : '') }, [provider, freeOnly])
 
   const meta = HTTP_PROVIDERS[provider] || {}
   const host = hostOf(baseUrlFor(provider, { providerOptions: { [provider]: { baseUrl } } }))
   const serverHasCoach = !!(user && config?.coach?.enabled)
+  const savedKeyUsable = hasKey && (!freeOnly || coachLocal?.freeOnly === true && coachLocal.provider === 'compatible' && coachLocal.baseUrl === OPENROUTER_FREE_SETTINGS.baseUrl)
+  const chooseFree = () => { setChoice('byok'); setProvider(OPENROUTER_FREE_SETTINGS.provider); setBaseUrl(OPENROUTER_FREE_SETTINGS.baseUrl); setFreeOnly(true); setModels(null) }
 
   const useServer = async () => {
     if (!user) return openSheet(close => <ConnectSheet close={close} />)
@@ -79,15 +82,18 @@ export default function CoachSetup() {
     // empty means the default. This one has no default, so empty is nowhere to call.
     if (meta.baseUrl && !meta.defaultBase && !v.value) return toast(t('Enter the endpoint URL'))
     if (isCleartext(v.value)) return toast(cleartextRefused())
-    if (!meta.keyOptional && !key.trim() && !hasKey) return toast(t('Enter your API key'))
+    if ((!meta.keyOptional || freeOnly) && !key.trim() && !savedKeyUsable) return toast(t('Enter your API key'))
     setBusy(true); setStep(0)
     try {
       const local = await import('../lib/coach-local.js')
       setStep(1)
       const k = key.trim() || await getApiKey()
-      const r = await local.localModels({ provider, baseUrl: v.value }, k)
+      const r = await local.localModels({ provider, baseUrl: v.value, ...(freeOnly ? { freeOnly: true } : {}) }, k)
       if (!r.ok) { setStep(-1); toast(t('Could not reach the provider: {0}', r.error)); return }
-      setModels(r.models)
+      const available = freeOnly ? r.models.filter(isOpenRouterFreeModel) : r.models
+      setModels(available)
+      if (freeOnly) setModel(available.includes(OPENROUTER_FREE_SETTINGS.model) ? OPENROUTER_FREE_SETTINGS.model : available[0] || '')
+      if (freeOnly && !available.length) toast(t('No free models are available right now. Try later.'))
       setStep(2)
       if (!model && meta.defaultModel && r.models.includes(meta.defaultModel)) setModel(meta.defaultModel)
     } catch (e) {
@@ -104,6 +110,8 @@ export default function CoachSetup() {
     if (meta.baseUrl && !meta.defaultBase && !v.value) return toast(t('Enter the endpoint URL'))
     const chosen = model || meta.defaultModel
     if (!chosen) return toast(t('Pick a model'))
+    if (freeOnly && (provider !== 'compatible' || v.value !== OPENROUTER_FREE_SETTINGS.baseUrl || !isOpenRouterFreeModel(chosen))) return toast(t('Only free OpenRouter models are allowed in this mode.'))
+    if (freeOnly && !key.trim() && !savedKeyUsable) return toast(t('Enter your API key'))
     // The endpoint can still be edited after the models were listed.
     if (isCleartext(v.value)) return toast(cleartextRefused())
     setBusy(true)
@@ -111,7 +119,7 @@ export default function CoachSetup() {
       // The mode first, the key second: the settings file is the cheap, reliable write, the
       // key goes through the platform's secure store, which is the step that can misbehave.
       // Either way the user hears what happened instead of watching a greyed-out button (#42).
-      await setCoachLocal({ mode: 'byok', provider, model: chosen, baseUrl: meta.baseUrl ? v.value : null })
+      await setCoachLocal({ mode: 'byok', provider, model: chosen, baseUrl: meta.baseUrl ? v.value : null, ...(freeOnly || coachLocal?.freeOnly === true ? { freeOnly } : {}) })
       if (key.trim()) { await setApiKey(key.trim()); setHasKey(true); setKey('') }
       toast(t('The Coach is on'))
       nav('/coach')
@@ -140,12 +148,15 @@ export default function CoachSetup() {
     </div>
 
     <Section title={t('How should the Coach run?')} footer={current}>
+      <Row icon="sparkles" iconTint="var(--acc)" title={t('Free AI on this phone')}
+        subtitle={t('OpenRouter free models over the internet. No computer needed. Your own key, no paid fallback.')}
+        accessory="chevron" onClick={chooseFree} className="ritm-free-ai-choice" />
       <Row icon="rocket" iconTint="var(--indigo)" title={t('Use my self-hosted openGym')}
         subtitle={user ? (serverHasCoach ? t('Your server runs the Coach with whatever provider its admin set up. Nothing new leaves this phone beyond what already syncs.') : config == null ? t('Loading…') : t('Your server has no Coach enabled — ask its admin, or bring your own key below.')) : t('Connect to my server')}
         accessory="chevron" onClick={() => { if (!user || serverHasCoach) useServer(); else setChoice('server') }} />
       <Row icon="key" iconTint="var(--acc)" title={t('Bring my own API key')}
         subtitle={t('This phone calls the provider directly with your key. Every request is charged to your account.')}
-        accessory="chevron" onClick={() => setChoice('byok')} />
+        accessory="chevron" onClick={() => { setChoice('byok'); setFreeOnly(false) }} />
     </Section>
 
     {choice === 'server' && !serverHasCoach && <div className="card">
@@ -153,14 +164,16 @@ export default function CoachSetup() {
     </div>}
 
     {choice === 'byok' && <>
+      {freeOnly && <div className="card ritm-free-ai-card"><span className="ritm-eyebrow">{t('FREE CLOUD AI')}</span><h2>OpenRouter</h2><p>{t('Only free models. No automatic paid fallback.')}</p><p className="small muted">{t('Free requests have daily limits and availability can change. If a free provider is unavailable, the request stops.')}</p><div className="ritm-ai-links"><a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">{t('Get my OpenRouter key')}</a><a href="https://openrouter.ai/settings/privacy" target="_blank" rel="noopener noreferrer">{t('Provider privacy settings')}</a></div></div>}
+      {!freeOnly &&
       <Section title={t('Provider')}>
         <div className="row" style={{ flexWrap: 'wrap', gap: 7, padding: '8px 12px' }}>
           {HTTP_PROVIDER_IDS.map(id => <button key={id} className={'chip' + (id === provider ? ' on' : '')} disabled={busy}
-            onClick={() => setProvider(id)}>{HTTP_PROVIDERS[id].label}</button>)}
+            onClick={() => { setFreeOnly(false); setProvider(id) }}>{HTTP_PROVIDERS[id].label}</button>)}
         </div>
-      </Section>
+      </Section>}
 
-      {meta.baseUrl && <Section title={t('Endpoint')}
+      {meta.baseUrl && !freeOnly && <Section title={t('Endpoint')}
         footer={isCleartext(baseUrl) ? <span style={{ color: 'var(--red)' }}>{cleartextRefused()}</span> : null}>
         <div style={{ padding: '8px 12px' }}>
           <TextField value={baseUrl} placeholder="https://ollama.example.com" inputMode="url" autoCapitalize="none" autoCorrect="off"
@@ -170,7 +183,7 @@ export default function CoachSetup() {
 
       <Section title={t('API key')} footer={t('The key is stored in this phone’s secure storage and never leaves it except to call the provider.')}>
         <div style={{ padding: '8px 12px' }}>
-          <TextField value={key} type="password" placeholder={hasKey ? '••••••••  ' + t('(saved)') : (meta.keyPlaceholder || 'sk-…')} autoCapitalize="none" autoCorrect="off"
+          <TextField value={key} type="password" placeholder={savedKeyUsable ? '••••••••  ' + t('(saved)') : freeOnly ? 'sk-or-…' : (meta.keyPlaceholder || 'sk-…')} autoCapitalize="none" autoCorrect="off"
             onChange={e => setKey(e.target.value)} />
         </div>
       </Section>
@@ -182,7 +195,7 @@ export default function CoachSetup() {
         })}
       </Section>
       <p className="sect-f" style={{ marginTop: -18, marginBottom: 22, lineHeight: 1.5 }}>
-        {t('Each request goes straight to {0} with your key — nobody else sees it, and you pay for it.', host || meta.label)}
+        {freeOnly ? t('Requests go to OpenRouter and its selected model provider. RITM requests providers that do not collect data; review OpenRouter privacy settings before use.') : t('Each request goes straight to {0} with your key — nobody else sees it, and you pay for it.', host || meta.label)}
       </p>
 
       {step >= 0 && <div className="card">
@@ -196,7 +209,7 @@ export default function CoachSetup() {
         <div style={{ padding: '8px 12px' }}>
           <select className="input" value={model} disabled={busy} onChange={e => setModel(e.target.value)} style={{ width: '100%' }}>
             <option value="">{meta.defaultModel ? `(${meta.defaultModel})` : t('Pick a model')}</option>
-            {models.map(m => <option key={m} value={m}>{m}</option>)}
+            {models.map(m => <option key={m} value={m}>{m === OPENROUTER_FREE_SETTINGS.model ? t('Automatic free model') : m}</option>)}
           </select>
         </div>
       </Section>}

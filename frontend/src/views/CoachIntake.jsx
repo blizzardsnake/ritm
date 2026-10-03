@@ -237,7 +237,7 @@ function Consent({ onAgree, onDecline }) {
   const config = useStore(s => s.config)
   const [info, setInfo] = useState(null)
   useEffect(() => { disclosure().then(setInfo).catch(() => {}) }, [])
-  const who = info?.payer === 'you'
+  const who = info?.payer === 'free' ? t('Sent to OpenRouter and its model provider using only free models. Daily limits apply.') : info?.payer === 'you'
     ? t('Sent straight to {0} with your own API key — you pay for every request.', info.host || info.providerLabel)
     : t('Sent to {0}, running on this server under the instance owner’s account.', info?.providerLabel || config?.coach?.providerLabel || t('the configured AI provider'))
   return <>

@@ -57,6 +57,15 @@ describe('the Coach on a phone with its own key', () => {
     device.data = { mode: 'byok', provider: 'openai', model: 'gpt-t', baseUrl: null }
     wire.calls = []; wire.answer = chat(JSON.stringify(review)); secret.key = 'sk-test-1'
   })
+  it('refuses a restored free-only configuration pointing at a paid provider before any call', async () => {
+    await saveCoachDevice({ freeOnly: true })
+    await expect(local.localReview(state())).rejects.toMatchObject({ code: 'free_only' })
+    expect(wire.calls).toHaveLength(0)
+  })
+  it('discloses OpenRouter and the zero-cost mode correctly instead of saying every request is charged', async () => {
+    await saveCoachDevice({ freeOnly: true, provider: 'compatible', baseUrl: 'https://openrouter.ai/api', model: 'openrouter/free' })
+    expect(await local.localDisclosure()).toMatchObject({ providerLabel: 'OpenRouter', payer: 'free', freeOnly: true, host: 'openrouter.ai' })
+  })
 
   it('runs a review through the real pipeline and produces a proposal the apply engine accepts', async () => {
     const S = state()

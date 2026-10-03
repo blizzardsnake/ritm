@@ -40,6 +40,11 @@
 @media (max-width: 420px) { .ritm-health-page .row.between:has(input[type=date]) { flex-wrap: wrap; } .ritm-health-page .row.between:has(input[type=date]) h2 { width: 100%; } }
 
 .ritm-personal-progress { margin-block: 24px; }
+.ritm-free-ai-choice { background: var(--acc-soft); }
+.ritm-free-ai-card { background: radial-gradient(ellipse at 100% 0, var(--acc-soft), transparent 80%), var(--surface); border: 1px solid var(--sep-op); }
+.ritm-free-ai-card h2 { margin-top: 8px; font-size: 25px; }
+.ritm-ai-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; font-size: 12px; }
+.ritm-ai-links a { color: var(--acc); text-decoration: underline; text-underline-offset: 4px; }
 .ritm-personal-progress .card { padding: 22px; border-radius: 24px; }
 .ritm-personal-progress .ritm-section-heading h2 { margin: 5px 0 0; }
 .ritm-personal-progress .ritm-section-heading > .btn { flex-shrink: 0; }
